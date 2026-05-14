@@ -1,0 +1,150 @@
+<mxfile host="app.diagrams.net" modified="2025-05-14T00:00:00Z" agent="ProyectoSemestral" version="21.0.0">
+  <diagram id="arch-diagram" name="Arquitectura">
+    <mxGraphModel dx="1000" dy="700" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1100" pageHeight="900">
+      <root>
+        <mxCell id="0"/>
+        <mxCell id="1" parent="0"/>
+
+        <!-- Título -->
+        <mxCell id="title" value="Arquitectura del Proyecto - Datos Geoespaciales" style="text;html=1;fontSize=16;fontStyle=1;align=center;verticalAlign=top;" parent="1" vertex="1">
+          <mxGeometry x="100" y="10" width="800" height="30" as="geometry"/>
+        </mxCell>
+
+        <!-- 1. API Externa -->
+        <mxCell id="api" value="🌐 USGS Earthquake API" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;" parent="1" vertex="1">
+          <mxGeometry x="350" y="60" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: API → Extract -->
+        <mxCell id="arrow1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#6c8ebf;" parent="1" source="api" target="extract" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: API → Mage como texto de programación -->
+        <mxCell id="arrow_mage_api" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0;strokeColor=#82b366;dashed=1;" parent="1" source="api" target="mage" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="300" y="85" as="sourcePoint"/>
+            <mxPoint x="180" y="180" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- 2. Extract & Load -->
+        <mxCell id="extract" value="📥 Scripts Python&#10;Extract &amp; Load" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;" parent="1" vertex="1">
+          <mxGeometry x="350" y="150" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: Extract → PostGIS Raw -->
+        <mxCell id="arrow2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="extract" target="postgis1" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 3. PostgreSQL + PostGIS (Raw) -->
+        <mxCell id="postgis1" value="🗄️ PostgreSQL + PostGIS&#10;(Raw Data)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="350" y="240" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: PostGIS Raw → Transform -->
+        <mxCell id="arrow3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="postgis1" target="transform" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 4. Transform (GeoPandas) -->
+        <mxCell id="transform" value="🔄 Pandas / GeoPandas&#10;(Transformación Espacial)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;" parent="1" vertex="1">
+          <mxGeometry x="350" y="330" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: Transform → PostGIS Final -->
+        <mxCell id="arrow4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="transform" target="postgis2" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 5. PostgreSQL + PostGIS (Final) -->
+        <mxCell id="postgis2" value="🗄️ PostgreSQL + PostGIS&#10;(Tabla Final Optimizada)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;" parent="1" vertex="1">
+          <mxGeometry x="350" y="420" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: PostGIS Final → FastAPI -->
+        <mxCell id="arrow5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="postgis2" target="fastapi" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 6. FastAPI -->
+        <mxCell id="fastapi" value="🚀 FastAPI + Uvicorn&#10;(Backend / API RESTful)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+          <mxGeometry x="350" y="510" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: FastAPI → Streamlit -->
+        <mxCell id="arrow6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="fastapi" target="streamlit" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 7. Streamlit -->
+        <mxCell id="streamlit" value="📊 Streamlit + Folium&#10;(Dashboard Interactivo)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;" parent="1" vertex="1">
+          <mxGeometry x="350" y="600" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: Streamlit → Usuario -->
+        <mxCell id="arrow7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" parent="1" source="streamlit" target="usuario" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- 8. Usuario de Negocio -->
+        <mxCell id="usuario" value="👤 Usuario de Negocio" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontStyle=1;" parent="1" vertex="1">
+          <mxGeometry x="350" y="690" width="200" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- 9. Mage AI (Orquestador - Lateral) -->
+        <mxCell id="mage" value="⚡ Mage AI&#10;(Orquestador)&#10;Cada 12h" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e6e6fa;strokeColor=#8b5cf6;fontStyle=1;arcSize=20;" parent="1" vertex="1">
+          <mxGeometry x="80" y="180" width="160" height="70" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: Mage → Extract -->
+        <mxCell id="arrow_mage1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#8b5cf6;dashed=1;" parent="1" source="mage" target="extract" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha: Mage → Transform -->
+        <mxCell id="arrow_mage2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#8b5cf6;dashed=1;" parent="1" source="mage" target="transform" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Etiqueta: Extracción de datos -->
+        <mxCell id="label1" value="Extracción de datos" style="text;html=1;fontSize=10;fontColor=#6c8ebf;align=center;" parent="1" vertex="1">
+          <mxGeometry x="410" y="115" width="100" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Etiqueta: programa tareas -->
+        <mxCell id="label2" value="Programa tareas" style="text;html=1;fontSize=10;fontColor=#8b5cf6;align=center;" parent="1" vertex="1">
+          <mxGeometry x="160" y="155" width="80" height="20" as="geometry"/>
+        </mxCell>
+
+        <!-- Etiqueta: Consultas espaciales SQL -->
+        <mxCell id="label3" value="Consultas SQL espaciales" style="text;html=1;fontSize=10;fontColor=#9673a6;align=center;" parent="1" vertex="1">
+          <mxGeometry x="560" y="260" width="120" height="20" as="geometry"/>
+        </mxCell>
+        <mxCell id="line1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=0.5;entryY=0.5;dashed=1;strokeColor=#9673a6;" parent="1" edge="1">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="350" y="265" as="sourcePoint"/>
+            <mxPoint x="560" y="265" as="targetPoint"/>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Docker (barra lateral) -->
+        <mxCell id="docker" value="🐳 Docker Compose&#10;(Infraestructura)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f0f0f0;strokeColor=#999;fontSize=11;fontStyle=1;arcSize=10;" parent="1" vertex="1">
+          <mxGeometry x="620" y="180" width="120" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- Flecha Docker → (dashed a todos) -->
+        <mxCell id="arrow_docker" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;exitX=0;exitY=0.5;entryX=1;entryY=0.5;strokeColor=#999;dashed=1;" parent="1" source="docker" target="postgis1" edge="1">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <!-- Etiqueta de stack -->
+        <mxCell id="stack_label" value="Stack Tecnológico" style="text;html=1;fontSize=10;fontColor=#999;align=center;" parent="1" vertex="1">
+          <mxGeometry x="620" y="160" width="120" height="20" as="geometry"/>
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

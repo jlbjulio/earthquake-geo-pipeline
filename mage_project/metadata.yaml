@@ -1,0 +1,22 @@
+project_type: standalone
+variables_dir: ~/.mage_data
+variables_retention_period: '90d'
+features:
+  add_new_blocks: true
+  command_center: true
+  compute_management: true
+  custom_design: false
+  data_integration_in_batch_pipeline: false
+  dbt_v2: true
+  global_hooks: true
+  interactions: true
+  display_local_timezone: false
+  notebook_block_output_split_view: false
+  operation_history: true
+  pipeline_search: true
+  preview_feature: false
+  project_platform: false
+  project_resource_directories: true
+  resource_managers: false
+  triggers: true
+help_improve_mage: true

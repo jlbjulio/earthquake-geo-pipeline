@@ -1,0 +1,16 @@
+blocks:
+  - name: extract_and_load
+    type: data_loader
+    language: python
+    file_path: pipelines/earthquake_pipeline/blocks/extract_load.py
+    retry_config:
+      retries: 2
+      delay: 10
+
+  - name: transform_and_load
+    type: data_exporter
+    language: python
+    file_path: pipelines/earthquake_pipeline/blocks/transform_load.py
+    retry_config:
+      retries: 2
+      delay: 10

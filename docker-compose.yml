@@ -1,0 +1,100 @@
+services:
+  # ──────────────────────────────────────────────
+  # Base de datos espacial (PostgreSQL + PostGIS)
+  # ──────────────────────────────────────────────
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: geodb
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-geodata}
+      POSTGRES_USER: ${POSTGRES_USER:-geo_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geo_pass}
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgis_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U geo_user -d geodata"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # Base de datos para metadatos de Mage AI
+  # ──────────────────────────────────────────────
+  mage_db:
+    image: postgres:16-alpine
+    container_name: mage_metadata_db
+    environment:
+      POSTGRES_DB: mage_metadata
+      POSTGRES_USER: mage_user
+      POSTGRES_PASSWORD: mage_pass
+    ports:
+      - "5434:5432"
+    volumes:
+      - mage_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mage_user -d mage_metadata"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ──────────────────────────────────────────────
+  # Orquestador: Mage AI
+  # ──────────────────────────────────────────────
+  mage:
+    image: mageai/mageai:latest
+    container_name: mage_orchestrator
+    depends_on:
+      mage_db:
+        condition: service_healthy
+      postgis:
+        condition: service_healthy
+    environment:
+      MAGE_DATABASE_CONNECTION_URL: ${MAGE_DATABASE_CONNECTION_URL:-postgresql+psycopg2://mage_user:mage_pass@mage_db:5432/mage_metadata}
+      POSTGRES_DB: ${POSTGRES_DB:-geodata}
+      POSTGRES_USER: ${POSTGRES_USER:-geo_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geo_pass}
+      POSTGRES_HOST: postgis
+      POSTGRES_PORT: 5432
+    ports:
+      - "6789:6789"
+    volumes:
+      - ./mage_project:/home/src/default_repo
+      - ./scripts:/home/scripts
+    command: mage start default_repo
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Backend: FastAPI
+  # ──────────────────────────────────────────────
+  backend:
+    build: ./backend
+    container_name: fastapi_backend
+    depends_on:
+      postgis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgresql://geo_user:geo_pass@postgis:5432/geodata}
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  # ──────────────────────────────────────────────
+  # Dashboard: Streamlit
+  # ──────────────────────────────────────────────
+  dashboard:
+    build: ./dashboard
+    container_name: streamlit_dashboard
+    depends_on:
+      - backend
+    environment:
+      API_BASE_URL: http://backend:8000
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+
+volumes:
+  postgis_data:
+  mage_db_data:
