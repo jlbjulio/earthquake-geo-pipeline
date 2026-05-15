@@ -30,7 +30,7 @@ def get_engine():
 def read_raw_earthquakes(engine) -> pd.DataFrame:
     """Lee datos crudos desde la tabla raw_earthquakes en PostGIS."""
     query = """
-        SELECT usgs_id, mag, place, time, updated, magType, tsunami, alert,
+        SELECT usgs_id, mag, place, time, updated, magType AS magtype, tsunami, alert,
                status, sig, depth, longitude, latitude
         FROM raw_earthquakes
         WHERE longitude IS NOT NULL AND latitude IS NOT NULL
@@ -47,7 +47,9 @@ def transform_to_geodataframe(df: pd.DataFrame) -> gpd.GeoDataFrame:
     df["depth"] = df["depth"].fillna(0)
     df["place"] = df["place"].fillna("Unknown")
     df["status"] = df["status"].fillna("unknown")
-    df["magType"] = df["magType"].fillna("unknown")
+    df["magtype"] = df["magtype"].fillna("unknown")
+    df["alert"] = df["alert"].fillna("")
+    df["status"] = df["status"].fillna("unknown")
     df["alert"] = df["alert"].fillna("")
     df["tsunami"] = df["tsunami"].fillna(0).astype(int)
     df["sig"] = df["sig"].fillna(0).astype(int)
@@ -94,18 +96,20 @@ def load_processed(gdf: gpd.GeoDataFrame, engine) -> int:
                         geom = EXCLUDED.geom,
                         processed_at = NOW()
                 """),
-                usgs_id=row.get("usgs_id"),
-                mag=row.get("mag"),
-                place=row.get("place"),
-                time=row.get("time"),
-                updated=row.get("updated"),
-                magType=row.get("magType"),
-                tsunami=row.get("tsunami", 0),
-                alert=row.get("alert", ""),
-                status=row.get("status", "unknown"),
-                sig=row.get("sig", 0),
-                depth=row.get("depth", 0),
-                wkt=wkt,
+                {
+                    "usgs_id": row.get("usgs_id"),
+                    "mag": row.get("mag"),
+                    "place": row.get("place"),
+                    "time": row.get("time"),
+                    "updated": row.get("updated"),
+                    "magType": row.get("magtype"),
+                    "tsunami": row.get("tsunami", 0),
+                    "alert": row.get("alert", ""),
+                    "status": row.get("status", "unknown"),
+                    "sig": row.get("sig", 0),
+                    "depth": row.get("depth", 0),
+                    "wkt": wkt,
+                },
             )
             count += 1
     return count

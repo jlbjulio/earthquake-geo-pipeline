@@ -37,8 +37,10 @@ def extract_earthquakes(url: str = USGS_URL) -> pd.DataFrame:
         props = feature.get("properties", {})
         geom = feature.get("geometry", {})
 
+        feature_id = feature.get("id")
         rows.append({
-            "usgs_id": feature.get("id"),
+            "id": feature_id,
+            "usgs_id": feature_id,
             "mag": props.get("mag"),
             "place": props.get("place"),
             "time": datetime.utcfromtimestamp(props.get("time", 0) / 1000),
@@ -79,12 +81,12 @@ def load_raw(df: pd.DataFrame, engine) -> int:
             conn.execute(
                 text("""
                     INSERT INTO raw_earthquakes (
-                        usgs_id, mag, place, time, updated, tz, url, detail,
+                        id, usgs_id, mag, place, time, updated, tz, url, detail,
                         felt, cdi, mmi, alert, status, tsunami, sig, net, code,
                         ids, sources, types, nst, dmin, rms, gap, magType,
                         geometry_type, longitude, latitude, depth
                     ) VALUES (
-                        :usgs_id, :mag, :place, :time, :updated, :tz, :url, :detail,
+                        :id, :usgs_id, :mag, :place, :time, :updated, :tz, :url, :detail,
                         :felt, :cdi, :mmi, :alert, :status, :tsunami, :sig, :net, :code,
                         :ids, :sources, :types, :nst, :dmin, :rms, :gap, :magType,
                         :geometry_type, :longitude, :latitude, :depth
@@ -96,7 +98,7 @@ def load_raw(df: pd.DataFrame, engine) -> int:
                         updated = EXCLUDED.updated,
                         ingested_at = NOW()
                 """),
-                **{k: (None if pd.isna(v) else v) for k, v in row.items()}
+                {k: (None if pd.isna(v) else v) for k, v in row.items()}
             )
             count += 1
     return count
