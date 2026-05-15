@@ -49,8 +49,6 @@ def transform_to_geodataframe(df: pd.DataFrame) -> gpd.GeoDataFrame:
     df["status"] = df["status"].fillna("unknown")
     df["magtype"] = df["magtype"].fillna("unknown")
     df["alert"] = df["alert"].fillna("")
-    df["status"] = df["status"].fillna("unknown")
-    df["alert"] = df["alert"].fillna("")
     df["tsunami"] = df["tsunami"].fillna(0).astype(int)
     df["sig"] = df["sig"].fillna(0).astype(int)
     df["time"] = pd.to_datetime(df["time"], errors="coerce")
@@ -118,14 +116,14 @@ def load_processed(gdf: gpd.GeoDataFrame, engine) -> int:
 def transform_and_load():
     engine = get_engine()
     df_raw = read_raw_earthquakes(engine)
-    print(f"Leídos {len(df_raw)} registros desde raw_earthquakes")
+    print(f"Leidos {len(df_raw)} registros desde raw_earthquakes")
 
     gdf = transform_to_geodataframe(df_raw)
-    print(f"Transformados {len(gdf)} registros a GeoDataFrame con geometrías")
+    print(f"Transformados {len(gdf)} registros a GeoDataFrame con geometrias")
 
     count = load_processed(gdf, engine)
     print(f"Cargados {count} eventos a tabla final earthquakes")
-    return {"leídos": len(df_raw), "transformados": len(gdf), "cargados": count}
+    return {"leidos": len(df_raw), "transformados": len(gdf), "cargados": count}
 
 
 if __name__ == "__main__":

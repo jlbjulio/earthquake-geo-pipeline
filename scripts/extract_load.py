@@ -6,7 +6,7 @@ Flujo del diagrama de arquitectura:
   API Externa → Scripts Python (Extract & Load) → PostgreSQL + PostGIS (Raw)
 """
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import requests
@@ -43,8 +43,8 @@ def extract_earthquakes(url: str = USGS_URL) -> pd.DataFrame:
             "usgs_id": feature_id,
             "mag": props.get("mag"),
             "place": props.get("place"),
-            "time": datetime.utcfromtimestamp(props.get("time", 0) / 1000),
-            "updated": datetime.utcfromtimestamp(props.get("updated", 0) / 1000),
+            "time": datetime.fromtimestamp(props.get("time", 0) / 1000, tz=timezone.utc),
+            "updated": datetime.fromtimestamp(props.get("updated", 0) / 1000, tz=timezone.utc),
             "tz": props.get("tz"),
             "url": props.get("url"),
             "detail": props.get("detail"),
@@ -108,7 +108,7 @@ def extract_and_load():
     engine = get_engine()
     df = extract_earthquakes()
     count = load_raw(df, engine)
-    print(f"Extraídos y cargados {count} eventos sísmicos a raw_earthquakes")
+    print(f"Extraidos y cargados {count} eventos sismicos a raw_earthquakes")
     return {"eventos": len(df), "insertados": count}
 
 

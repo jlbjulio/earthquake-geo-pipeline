@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import text
@@ -27,7 +27,7 @@ def list_earthquakes(
         SELECT
             id, usgs_id, mag, place,
             time AT TIME ZONE 'UTC' as time,
-            magType, tsunami, alert, status, sig, depth,
+            magType AS "magType", tsunami, alert, status, sig, depth,
             ST_X(geom::geometry) AS longitude,
             ST_Y(geom::geometry) AS latitude
         FROM earthquakes
@@ -61,7 +61,7 @@ def earthquakes_in_radius(
         SELECT
             id, usgs_id, mag, place,
             time AT TIME ZONE 'UTC' as time,
-            magType, tsunami, alert, status, sig, depth,
+            magType AS "magType", tsunami, alert, status, sig, depth,
             ST_X(geom::geometry) AS longitude,
             ST_Y(geom::geometry) AS latitude,
             ROUND(
@@ -122,7 +122,7 @@ def earthquake_detail(usgs_id: str, db: Session = Depends(get_db)):
             id, usgs_id, mag, place,
             time AT TIME ZONE 'UTC' as time,
             updated AT TIME ZONE 'UTC' as updated,
-            magType, tsunami, alert, status, sig, depth,
+            magType AS "magType", tsunami, alert, status, sig, depth,
             ST_X(geom::geometry) AS longitude,
             ST_Y(geom::geometry) AS latitude
         FROM earthquakes

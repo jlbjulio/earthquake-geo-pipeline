@@ -118,7 +118,7 @@ if results:
                 f"Profundidad: {eq.get('depth', 'N/A')} km<br>"
                 f"Hora: {eq.get('time', 'N/A')}<br>"
                 f"Tsunami: {'⚠️ Sí' if eq.get('tsunami') else 'No'}<br>"
-                f"<a href='/api/v1/earthquakes/{eq['usgs_id']}' target='_blank'>Ver detalle</a>"
+                f"<a href='{API_BASE_URL}/api/v1/earthquakes/{eq['usgs_id']}' target='_blank'>Ver detalle</a>"
             ),
         ).add_to(m)
 
@@ -149,7 +149,7 @@ if results:
 
     # Formatear columnas
     col_order = ["mag", "place", "time", "depth", "latitude", "longitude",
-                 "magType", "tsunami", "alert", "status"]
+                 "magType", "magtype", "tsunami", "alert", "status"]
     col_order = [c for c in col_order if c in df.columns]
     st.dataframe(df[col_order], use_container_width=True, hide_index=True)
 else:

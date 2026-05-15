@@ -5,7 +5,7 @@ API: https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pandas as pd
 import requests
@@ -26,8 +26,8 @@ def extract_earthquakes(url: str = USGS_URL) -> pd.DataFrame:
             "usgs_id": feature.get("id"),
             "mag": props.get("mag"),
             "place": props.get("place"),
-            "time": datetime.utcfromtimestamp(props.get("time", 0) / 1000),
-            "updated": datetime.utcfromtimestamp(props.get("updated", 0) / 1000),
+            "time": datetime.fromtimestamp(props.get("time", 0) / 1000, tz=timezone.utc),
+            "updated": datetime.fromtimestamp(props.get("updated", 0) / 1000, tz=timezone.utc),
             "tz": props.get("tz"),
             "url": props.get("url"),
             "detail": props.get("detail"),
@@ -62,4 +62,4 @@ if __name__ == "__main__":
     output_path = sys.argv[1] if len(sys.argv) > 1 else "/tmp/raw_earthquakes.json"
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     df.to_json(output_path, orient="records", date_format="iso")
-    print(f"Extraídos {len(df)} eventos sísmicos → {output_path}")
+    print(f"Extraidos {len(df)} eventos sismicos -> {output_path}")

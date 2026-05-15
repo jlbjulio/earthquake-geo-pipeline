@@ -55,4 +55,4 @@ if __name__ == "__main__":
 
     # Guardar como GeoJSON
     gdf.to_file(output_path, driver="GeoJSON")
-    print(f"Transformados {len(gdf)} eventos → {output_path}")
+    print(f"Transformados {len(gdf)} eventos -> {output_path}")
