@@ -44,7 +44,7 @@ services:
   # Orquestador: Mage AI
   # ──────────────────────────────────────────────
   mage:
-    image: mageai/mageai:latest
+    build: ./mage_project
     container_name: mage_orchestrator
     depends_on:
       mage_db:
