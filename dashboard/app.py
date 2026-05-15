@@ -1,5 +1,4 @@
 import os
-import time
 
 import folium
 import pandas as pd
@@ -50,7 +49,7 @@ st.markdown(
 )
 
 
-def fetch_data(endpoint: str, params: dict = None) -> dict:
+def fetch_data(endpoint: str, params: dict | None = None) -> dict:
     try:
         resp = requests.get(
             f"{API_BASE_URL}/api/v1/{endpoint}",
@@ -59,7 +58,7 @@ def fetch_data(endpoint: str, params: dict = None) -> dict:
         )
         resp.raise_for_status()
         return resp.json()
-    except requests.RequestException:
+    except Exception:
         return {"count": 0, "results": []}
 
 

@@ -1,6 +1,7 @@
 from geoalchemy2 import Geography, Geometry
-from sqlalchemy import Column, Integer, Numeric, String, Text, DateTime
-from sqlalchemy.sql import func
+from sqlalchemy.sql.functions import func
+from sqlalchemy.sql.schema import Column
+from sqlalchemy.sql.sqltypes import DateTime, Integer, Numeric, String, Text
 
 from app.database import Base
 

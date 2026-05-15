@@ -1,6 +1,5 @@
-import sys
-sys.path.append('/home/scripts')
-from extract_load import extract_and_load
+from mage_ai.data_preparation.decorators import data_loader
+from scripts.extract_load import extract_and_load
 
 
 @data_loader
