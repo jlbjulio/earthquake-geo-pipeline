@@ -2,8 +2,7 @@ blocks:
 - all_upstream_blocks_executed: true
   color: null
   configuration: {}
-  downstream_blocks:
-  - transform_and_load
+  downstream_blocks: []
   executor_config: null
   executor_type: local_python
   has_callback: null
@@ -12,7 +11,7 @@ blocks:
   retry_config:
     delay: 10
     retries: 2
-  status: executed
+  status: failed
   timeout: null
   type: data_loader
   upstream_blocks: []
@@ -29,11 +28,10 @@ blocks:
   retry_config:
     delay: 10
     retries: 2
-  status: executed
+  status: null
   timeout: null
   type: data_exporter
-  upstream_blocks:
-  - extract_and_load
+  upstream_blocks: []
   uuid: transform_and_load
 cache_block_output_in_memory: false
 callbacks: []
