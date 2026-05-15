@@ -35,7 +35,11 @@ def read_raw_earthquakes(engine) -> pd.DataFrame:
         FROM raw_earthquakes
         WHERE longitude IS NOT NULL AND latitude IS NOT NULL
     """
-    return pd.read_sql(query, engine)
+    conn = engine.raw_connection()
+    try:
+        return pd.read_sql(query, conn)
+    finally:
+        conn.close()
 
 
 def transform_to_geodataframe(df: pd.DataFrame) -> gpd.GeoDataFrame:

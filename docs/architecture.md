@@ -97,7 +97,7 @@ Pipeline E2E de datos geoespaciales que integra:
           │  • KPIs: total, mag promedio, tsunamis           │
           │  • Filtros: magnitud, días, búsqueda radial      │
           │  • Clusters DBSCAN                               │
-          │  • Auto-refresh cada 30 segundos                 │
+           │  • Boton de refresco manual                    │
           └──────────────────────┬───────────────────────────┘
                                  │ Visualización
                                  ▼

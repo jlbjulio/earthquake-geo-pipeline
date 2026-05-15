@@ -1,6 +1,4 @@
-from datetime import datetime
-
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -131,6 +129,5 @@ def earthquake_detail(usgs_id: str, db: Session = Depends(get_db)):
     result = db.execute(sql, {"usgs_id": usgs_id})
     row = result.mappings().first()
     if not row:
-        from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Earthquake not found")
     return dict(row)

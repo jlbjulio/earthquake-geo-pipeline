@@ -104,14 +104,14 @@ Se levantan 5 contenedores: PostGIS, Mage DB, Mage AI, FastAPI, Streamlit.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
-│  🌍 Dashboard de Monitoreo Sísmico                       │
+│  Dashboard de Monitoreo Sismico                        │
 │  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                    │
 │  │Total │ │ Mag  │ │ Mag  │ │Tsuna-│                    │
 │  │Eventos│ │Prom. │ │ Máx. │ │ mis  │                    │
 │  │ 127   │ │ 2.4  │ │ 6.8  │ │  3   │                    │
 │  └──────┘ └──────┘ └──────┘ └──────┘                    │
 │  ┌──────────────────────────────────────────────────┐   │
-│  │  🗺️ Mapa Mundial con eventos sísmicos             │   │
+│  │  Mapa Mundial con eventos sismicos              │   │
 │  │  ● Magnitud < 2 (verde)                           │   │
 │  │  ● Magnitud 2-4 (amarillo)                        │   │
 │  │  ● Magnitud 4-6 (naranja)                         │   │
