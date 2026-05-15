@@ -1,5 +1,9 @@
 # Proyecto Semestral — Arquitectura y Exposición de Datos Geoespaciales
 
+**Integrantes:**
+- Julio Lara — 8-997-2325
+- Joseph Batista — 8-1009-1500
+
 Pipeline end-to-end de datos geoespaciales con orquestación en Mage AI, almacenamiento PostGIS, backend FastAPI y dashboard Streamlit.
 
 ## Stack

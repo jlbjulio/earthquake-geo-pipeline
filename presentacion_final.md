@@ -4,6 +4,7 @@
 
 ### Datos del Proyecto
 - **Curso**: Tópicos Especiales II
+- **Integrantes**: Julio Lara (8-997-2325), Joseph Batista (8-1009-1500)
 - **Stack**: Mage AI, PostgreSQL/PostGIS, Python/GeoPandas, FastAPI, Streamlit, Docker
 - **Fuente de Datos**: USGS Earthquake Catalog (API pública, GeoJSON en tiempo real)
 

@@ -1,5 +1,7 @@
 # Documento de Especificación Técnica
 
+**Integrantes:** Julio Lara (8-997-2325), Joseph Batista (8-1009-1500)
+
 ## Arquitectura del Proyecto
 
 ### Descripción General
