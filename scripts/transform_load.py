@@ -12,7 +12,7 @@ import os
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import Point
-from sqlalchemy import create_engine
+from sqlalchemy.engine.create import create_engine
 from sqlalchemy.sql.expression import text
 
 

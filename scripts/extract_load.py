@@ -10,7 +10,7 @@ from datetime import datetime, timezone
 
 import pandas as pd
 import requests
-from sqlalchemy import create_engine
+from sqlalchemy.engine.create import create_engine
 from sqlalchemy.sql.expression import text
 
 USGS_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"
