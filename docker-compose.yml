@@ -53,6 +53,7 @@ services:
         condition: service_healthy
     environment:
       MAGE_DATABASE_CONNECTION_URL: ${MAGE_DATABASE_CONNECTION_URL:-postgresql+psycopg2://mage_user:mage_pass@mage_db:5432/mage_metadata}
+      PYTHONPATH: /home/src/earthquake_geo_pipeline
       POSTGRES_DB: ${POSTGRES_DB:-geodata}
       POSTGRES_USER: ${POSTGRES_USER:-geo_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geo_pass}
@@ -61,9 +62,9 @@ services:
     ports:
       - "${MAGE_PORT:-6789}:6789"
     volumes:
-      - ./mage_project:/home/src/default_repo
-      - ./scripts:/home/scripts
-    command: mage start default_repo
+      - ./mage_project:/home/src/earthquake_geo_pipeline
+      - ./scripts:/home/src/earthquake_geo_pipeline/scripts
+    command: mage start earthquake_geo_pipeline
     restart: unless-stopped
 
   # ──────────────────────────────────────────────

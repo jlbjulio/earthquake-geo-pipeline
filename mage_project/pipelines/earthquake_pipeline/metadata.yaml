@@ -57,5 +57,5 @@ spark_config: {}
 tags: []
 type: python
 uuid: earthquake_pipeline
-variables_dir: /home/src/mage_data/default_repo
+variables_dir: /home/src/mage_data/earthquake_geo_pipeline
 widgets: []

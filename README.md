@@ -120,6 +120,8 @@ En ese caso, abre Mage AI en `http://localhost:6790`.
 
 El pipeline se ejecuta automaticamente cada 12 horas. Tambien se puede ejecutar manualmente desde la UI de Mage AI.
 
+Mage AI arranca este proyecto con el nombre `earthquake_geo_pipeline`.
+
 ## Datos
 
 Fuente: [USGS Earthquake Catalog](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php) — API publica sin autenticacion, formato GeoJSON, actualizada en tiempo real.
