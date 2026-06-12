@@ -54,6 +54,11 @@ services:
     environment:
       MAGE_DATABASE_CONNECTION_URL: ${MAGE_DATABASE_CONNECTION_URL:-postgresql+psycopg2://mage_user:mage_pass@mage_db:5432/mage_metadata}
       PYTHONPATH: /home/src/earthquake_geo_pipeline
+      REQUIRE_USER_AUTHENTICATION: "true"
+      JWT_SECRET: ${MAGE_JWT_SECRET:-earthquake_geo_pipeline_local_secret}
+      DEFAULT_OWNER_EMAIL: ${MAGE_OWNER_EMAIL:-admin@earthquake.local}
+      DEFAULT_OWNER_USERNAME: ${MAGE_OWNER_USERNAME:-admin}
+      DEFAULT_OWNER_PASSWORD: ${MAGE_OWNER_PASSWORD:-admin}
       POSTGRES_DB: ${POSTGRES_DB:-geodata}
       POSTGRES_USER: ${POSTGRES_USER:-geo_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geo_pass}
