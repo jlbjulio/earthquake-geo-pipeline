@@ -57,7 +57,7 @@ USGS Earthquake API
 | Servicio   | Puerto | URL                        |
 | ---------- | ------ | -------------------------- |
 | PostGIS    | 5433   | localhost:5433             |
-| Mage AI    | 6789   | http://localhost:6789      |
+| Mage AI    | 6789*  | http://localhost:6789      |
 | FastAPI    | 8000   | http://localhost:8000      |
 | Swagger UI | 8000   | http://localhost:8000/docs |
 | Streamlit  | 8501   | http://localhost:8501      |
@@ -109,6 +109,14 @@ Luego abrir:
 - Dashboard: http://localhost:8501
 - API Docs: http://localhost:8000/docs
 - Mage AI: http://localhost:6789
+
+Si el puerto `6789` ya esta ocupado, agrega `MAGE_PORT` en tu archivo `.env` antes de levantar los contenedores:
+
+```bash
+MAGE_PORT=6790
+```
+
+En ese caso, abre Mage AI en `http://localhost:6790`.
 
 El pipeline se ejecuta automaticamente cada 12 horas. Tambien se puede ejecutar manualmente desde la UI de Mage AI.
 

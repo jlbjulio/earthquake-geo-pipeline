@@ -124,10 +124,12 @@ Pipeline E2E de datos geoespaciales que integra:
 |-------------|--------|----------------------------|
 | PostGIS     | 5433   | localhost:5433              |
 | Mage AI DB  | 5434   | localhost:5434              |
-| Mage AI     | 6789   | http://localhost:6789       |
+| Mage AI     | 6789*  | http://localhost:6789       |
 | FastAPI     | 8000   | http://localhost:8000       |
 | Swagger UI  | 8000   | http://localhost:8000/docs  |
 | Streamlit   | 8501   | http://localhost:8501       |
+
+\* El puerto host de Mage AI se puede cambiar con la variable `MAGE_PORT` en `.env` si `6789` ya esta en uso.
 
 ### Estructura del Pipeline (Mage AI)
 

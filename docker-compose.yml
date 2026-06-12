@@ -59,7 +59,7 @@ services:
       POSTGRES_HOST: postgis
       POSTGRES_PORT: 5432
     ports:
-      - "6789:6789"
+      - "${MAGE_PORT:-6789}:6789"
     volumes:
       - ./mage_project:/home/src/default_repo
       - ./scripts:/home/scripts
