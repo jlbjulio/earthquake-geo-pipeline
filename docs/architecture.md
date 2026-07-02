@@ -12,7 +12,7 @@ Este proyecto implementa un pipeline end-to-end para datos geoespaciales de sism
 4. `transform_load.py` limpia datos y genera geometrias `Point`.
 5. PostgreSQL + PostGIS almacena la tabla final `earthquakes`.
 6. FastAPI expone endpoints REST con consultas espaciales.
-7. Streamlit + Folium visualiza KPIs, mapa, tabla y clusters.
+7. Streamlit + Folium visualiza KPIs, mapa, tabla y resumen.
 
 ## Stack Tecnologico
 
@@ -82,6 +82,8 @@ docker compose exec -w /home/src mage mage run earthquake_geo_pipeline earthquak
 ```
 
 ## Modelo de Datos
+
+Ver tambien [ERD - Modelo Entidad-Relacion](erd.md).
 
 ### `raw_earthquakes`
 

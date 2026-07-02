@@ -86,6 +86,7 @@ El backend se publica en `8001` para evitar conflictos con otros proyectos FastA
 |   +-- app.py
 +-- docs/
 |   +-- architecture.md
+|   +-- erd.md
 |   +-- diagrama_arquitectura.drawio
 +-- presentacion_final.md
 ```
@@ -132,6 +133,7 @@ BACKEND_PORT=8001
 MAGE_PORT=6789
 DASHBOARD_PORT=8501
 API_PUBLIC_URL=http://localhost:8001
+USGS_FEED_URL=https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson
 ```
 
 ## Datos

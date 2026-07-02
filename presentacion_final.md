@@ -90,7 +90,7 @@ curl "http://localhost:8001/api/v1/earthquakes?limit=5&days_back=30"
 - `raw_earthquakes`: tabla cruda con datos de USGS.
 - `earthquakes`: tabla final con columnas espaciales.
 - Indices GIST para consultas rapidas.
-- Funciones SQL para resumen y clusters.
+- Funciones SQL para resumen y consultas espaciales.
 
 ### FastAPI
 
@@ -110,7 +110,7 @@ Endpoints principales:
 - Mapa Folium con marcadores por magnitud.
 - Filtros por magnitud, dias y radio geografico.
 - Tabla de ultimos eventos.
-- Vista de clusters sismicos.
+- Resumen visual por categoria de magnitud y eventos recientes.
 
 ---
 

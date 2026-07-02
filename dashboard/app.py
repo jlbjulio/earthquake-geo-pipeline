@@ -74,31 +74,12 @@ st.markdown(
         background: var(--sidebar);
         border-right: 1px solid var(--sidebar-line);
     }
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] p {
-        color: var(--sidebar-text);
-    }
-    section[data-testid="stSidebar"] small,
-    section[data-testid="stSidebar"] .stCaptionContainer,
-    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
-        color: var(--sidebar-muted);
+    section[data-testid="stSidebar"],
+    section[data-testid="stSidebar"] * {
+        color: var(--sidebar-text) !important;
     }
     section[data-testid="stSidebar"] hr {
         border-color: var(--sidebar-line);
-    }
-    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
-    section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
-    section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
-        background: #fffaf7;
-        border-color: var(--sidebar-line);
-    }
-    section[data-testid="stSidebar"] [role="radiogroup"] label {
-        background: var(--sidebar-soft);
-        border-radius: 8px;
-        padding: 0.15rem 0.35rem;
     }
     h1, h2, h3 {
         color: var(--ink);
@@ -110,24 +91,30 @@ st.markdown(
     [data-testid="stCaptionContainer"] {
         color: var(--muted);
     }
-    section[data-testid="stSidebar"] h1,
-    section[data-testid="stSidebar"] h2,
-    section[data-testid="stSidebar"] h3,
-    section[data-testid="stSidebar"] p,
-    section[data-testid="stSidebar"] label,
-    section[data-testid="stSidebar"] span,
-    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {
-        color: var(--sidebar-text) !important;
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
+    section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
+        background: #fffaf7 !important;
+        border-color: var(--sidebar-line) !important;
     }
     section[data-testid="stSidebar"] input,
     section[data-testid="stSidebar"] textarea,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] div,
     section[data-testid="stSidebar"] div[data-baseweb="select"] span,
-    section[data-testid="stSidebar"] div[data-baseweb="select"] div {
+    section[data-testid="stSidebar"] div[data-baseweb="base-input"] * {
         color: var(--ink) !important;
     }
     section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
     section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
         color: var(--sidebar-muted) !important;
+    }
+    section[data-testid="stSidebar"] [role="radiogroup"] label {
+        background: var(--sidebar-soft);
+        border-radius: 8px;
+        padding: 0.15rem 0.35rem;
+    }
+    section[data-testid="stSidebar"] [role="radiogroup"] label * {
+        color: var(--sidebar-text) !important;
     }
     div[data-testid="stMetric"] {
         background: var(--panel);
@@ -298,7 +285,7 @@ def magnitude_label(mag):
     return "Severo"
 
 
-@st.cache_data(ttl=45, show_spinner=False)
+@st.cache_data(ttl=10, show_spinner=False)
 def fetch_data(endpoint: str, params: tuple = ()) -> dict:
     query = dict(params)
     response = requests.get(
@@ -431,18 +418,6 @@ with st.sidebar:
         st.caption("Eventos recientes muestra sismos globales. Usa Cerca de una zona para buscar por ubicacion.")
 
     st.divider()
-    cluster_radius = st.slider(
-        "Agrupar zonas activas",
-        10,
-        300,
-        100,
-        step=10,
-        help=(
-            "Agrupa sismos cercanos entre si. Un valor pequeno crea grupos mas "
-            "estrictos; un valor grande une eventos mas separados."
-        ),
-    )
-    st.caption(f"Une sismos cercanos entre si hasta {cluster_radius} km.")
     map_style = st.selectbox(
         "Tipo de mapa",
         ["CartoDB positron", "OpenStreetMap"],
@@ -450,7 +425,6 @@ with st.sidebar:
 
     refresh = st.button("Actualizar datos", width="stretch", type="primary")
     if refresh:
-        st.cache_data.clear()
         st.rerun()
 
     st.caption("Fuente: USGS Earthquake Catalog")
@@ -459,7 +433,7 @@ with st.sidebar:
         st.write("2. Usa Cerca de una zona para buscar alrededor de un pais o ciudad.")
         st.write("3. Ajusta la magnitud para ocultar eventos muy pequenos.")
         st.write("4. Puntos a mostrar solo controla cuantos aparecen en pantalla.")
-        st.write("5. Zonas activas agrupa sismos cercanos para detectar concentraciones.")
+        st.write("5. El mapa, la tabla y el resumen usan los mismos filtros.")
 
 st.markdown(
     """
@@ -528,8 +502,8 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-tab_map, tab_table, tab_clusters, tab_summary = st.tabs(
-    ["Mapa", "Eventos", "Zonas activas", "Resumen"]
+tab_map, tab_table, tab_summary = st.tabs(
+    ["Mapa", "Eventos", "Resumen"]
 )
 
 with tab_map:
@@ -595,35 +569,6 @@ with tab_table:
         st.dataframe(df[columns], width="stretch", hide_index=True)
     else:
         st.info("No hay eventos con los filtros actuales.")
-
-with tab_clusters:
-    st.caption(
-        "Una zona activa agrupa sismos cercanos entre si. Si aumentas el valor en el panel, "
-        "se unen eventos mas separados; si lo bajas, los grupos son mas estrictos."
-    )
-    cluster_data, cluster_error = safe_fetch(
-        "earthquakes/clusters",
-        {"radius_km": cluster_radius},
-    )
-    clusters = cluster_data.get("results", [])
-    if cluster_error:
-        st.warning(f"No se pudieron cargar clusters: {cluster_error}")
-    elif clusters:
-        df_clusters = pd.DataFrame(clusters)
-        df_clusters = df_clusters.rename(
-            columns={
-                "cluster_id": "Cluster",
-                "centroid_lat": "Latitud centro",
-                "centroid_lng": "Longitud centro",
-                "earthquake_count": "Eventos",
-                "avg_mag": "Magnitud prom.",
-                "max_mag": "Magnitud max.",
-            }
-        )
-        st.dataframe(df_clusters, width="stretch", hide_index=True)
-        st.bar_chart(df_clusters.set_index("Cluster")["Eventos"])
-    else:
-        st.info("No hay clusters para el radio seleccionado.")
 
 with tab_summary:
     if rows:
