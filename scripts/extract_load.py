@@ -13,7 +13,9 @@ import requests
 from sqlalchemy.engine.create import create_engine
 from sqlalchemy.sql.expression import text
 
-USGS_URL = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson"
+DEFAULT_USGS_URL = (
+    "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson"
+)
 
 
 def get_engine():
@@ -28,7 +30,8 @@ def get_engine():
     return create_engine(db_url)
 
 
-def extract_earthquakes(url: str = USGS_URL) -> pd.DataFrame:
+def extract_earthquakes(url: str | None = None) -> pd.DataFrame:
+    url = url or os.getenv("USGS_FEED_URL", DEFAULT_USGS_URL)
     response = requests.get(url, timeout=30)
     response.raise_for_status()
     data = response.json()

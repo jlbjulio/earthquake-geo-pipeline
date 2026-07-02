@@ -59,6 +59,7 @@ services:
       POSTGRES_HOST: postgis
       POSTGRES_PORT: 5432
       DATABASE_URL: postgresql://${POSTGRES_USER:-geo_user}:${POSTGRES_PASSWORD:-geo_pass}@postgis:5432/${POSTGRES_DB:-geodata}
+      USGS_FEED_URL: ${USGS_FEED_URL:-https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson}
     ports:
       - "${MAGE_PORT:-6789}:6789"
     volumes:

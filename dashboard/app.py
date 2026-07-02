@@ -19,10 +19,10 @@ LOCATION_PRESETS = {
 }
 
 MAG_COLORS = {
-    "low": "#22a06b",
-    "mid": "#f2b705",
-    "high": "#f97316",
-    "severe": "#dc2626",
+    "low": "#2f855a",
+    "mid": "#c98900",
+    "high": "#d65a31",
+    "severe": "#b42318",
 }
 
 st.set_page_config(
@@ -35,65 +35,160 @@ st.markdown(
     """
     <style>
     :root {
-        --ink: #16202a;
-        --muted: #667085;
-        --panel: #ffffff;
-        --line: #dde3ea;
-        --soft: #f6f8fb;
-        --teal: #007c89;
-        --coral: #e76f51;
-        --amber: #f2b705;
-        --green: #22a06b;
+        --ink: #24150f;
+        --muted: #6d5548;
+        --panel: #fff8f0;
+        --panel-strong: #ffffff;
+        --line: #dfc9b7;
+        --app-bg: #2b1712;
+        --main-bg: #f4e8dc;
+        --sidebar: #24120e;
+        --sidebar-soft: #3a211b;
+        --sidebar-line: #70483a;
+        --sidebar-text: #fff8f2;
+        --sidebar-muted: #ead6c9;
+        --primary: #7a3f2a;
+        --primary-dark: #4b2419;
+        --accent: #a85b36;
+        --focus: #8d4c31;
+    }
+    .stApp {
+        background: var(--app-bg);
+        color: var(--ink);
+    }
+    [data-testid="stAppViewContainer"],
+    [data-testid="stMain"] {
+        background: var(--app-bg);
     }
     .block-container {
-        padding-top: 1.1rem;
-        padding-bottom: 2rem;
+        background: var(--main-bg);
+        border: 1px solid #6b4539;
+        border-radius: 10px;
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+        padding: 1.25rem 1.45rem 2rem 1.45rem;
         max-width: 1440px;
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
     }
     section[data-testid="stSidebar"] {
-        background: #f4f7fa;
-        border-right: 1px solid var(--line);
+        background: var(--sidebar);
+        border-right: 1px solid var(--sidebar-line);
+    }
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] p {
+        color: var(--sidebar-text);
+    }
+    section[data-testid="stSidebar"] small,
+    section[data-testid="stSidebar"] .stCaptionContainer,
+    section[data-testid="stSidebar"] [data-testid="stMarkdownContainer"] {
+        color: var(--sidebar-muted);
+    }
+    section[data-testid="stSidebar"] hr {
+        border-color: var(--sidebar-line);
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
+    section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
+    section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
+        background: #fffaf7;
+        border-color: var(--sidebar-line);
+    }
+    section[data-testid="stSidebar"] [role="radiogroup"] label {
+        background: var(--sidebar-soft);
+        border-radius: 8px;
+        padding: 0.15rem 0.35rem;
     }
     h1, h2, h3 {
         color: var(--ink);
         letter-spacing: 0;
     }
+    p, label, span, div[data-testid="stMarkdownContainer"] {
+        color: var(--ink);
+    }
+    [data-testid="stCaptionContainer"] {
+        color: var(--muted);
+    }
+    section[data-testid="stSidebar"] h1,
+    section[data-testid="stSidebar"] h2,
+    section[data-testid="stSidebar"] h3,
+    section[data-testid="stSidebar"] p,
+    section[data-testid="stSidebar"] label,
+    section[data-testid="stSidebar"] span,
+    section[data-testid="stSidebar"] div[data-testid="stMarkdownContainer"] {
+        color: var(--sidebar-text) !important;
+    }
+    section[data-testid="stSidebar"] input,
+    section[data-testid="stSidebar"] textarea,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] span,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] div {
+        color: var(--ink) !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
+    section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
+        color: var(--sidebar-muted) !important;
+    }
     div[data-testid="stMetric"] {
         background: var(--panel);
         border: 1px solid var(--line);
         border-radius: 8px;
-        padding: 0.85rem 1rem;
-        box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+        padding: 0.95rem 1rem;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.05);
     }
     div[data-testid="stMetricValue"] {
         color: var(--ink);
-        font-size: 1.7rem;
+        font-size: 1.6rem;
+        line-height: 1.15;
+    }
+    div[data-testid="stMetricLabel"] {
+        color: var(--muted);
     }
     .hero {
-        background: linear-gradient(135deg, #0f3d4c 0%, #167070 48%, #e76f51 120%);
-        color: white;
+        background: #fff8f0;
+        color: var(--ink);
+        border: 1px solid var(--line);
+        border-left: 6px solid var(--primary);
         border-radius: 8px;
-        padding: 1.15rem 1.3rem;
+        padding: 1.1rem 1.25rem;
         margin-bottom: 1rem;
+        box-shadow: 0 1px 3px rgba(17, 24, 39, 0.06);
     }
     .hero h1 {
-        color: white;
+        color: var(--primary-dark);
         margin: 0 0 0.25rem 0;
-        font-size: 2rem;
+        font-size: 1.85rem;
     }
     .hero p {
         margin: 0;
-        color: rgba(255, 255, 255, 0.86);
+        color: var(--muted);
+        font-size: 1rem;
     }
     .status-pill {
         display: inline-block;
-        padding: 0.25rem 0.55rem;
+        padding: 0.32rem 0.65rem;
         border-radius: 999px;
-        background: #e8f5ef;
-        color: #146c43;
-        border: 1px solid #b7dfca;
+        background: #e7f6f2;
+        color: #17634f;
+        border: 1px solid #a8d8cc;
         font-weight: 700;
         font-size: 0.82rem;
+    }
+    .info-strip {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.65rem;
+        background: #fff8f0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.7rem 0.85rem;
+        margin: 0.35rem 0 1rem 0;
+        color: var(--muted);
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
+    }
+    .info-strip strong {
+        color: var(--ink);
     }
     .legend {
         display: flex;
@@ -103,11 +198,12 @@ st.markdown(
     }
     .legend span {
         border: 1px solid var(--line);
-        background: white;
+        background: #fff8f0;
         border-radius: 999px;
         padding: 0.25rem 0.6rem;
-        color: var(--muted);
+        color: var(--ink);
         font-size: 0.86rem;
+        box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
     }
     .dot {
         display: inline-block;
@@ -116,6 +212,42 @@ st.markdown(
         border-radius: 50%;
         margin-right: 0.35rem;
         vertical-align: -0.05rem;
+    }
+    button[kind="primary"] {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #ffffff !important;
+    }
+    div[data-baseweb="tab-list"] {
+        gap: 0.25rem;
+    }
+    button[data-baseweb="tab"] {
+        background: #fff8f0;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        color: var(--ink);
+        min-height: 3rem;
+        padding: 0.7rem 1.25rem;
+        margin-right: 0.35rem;
+        box-shadow: 0 1px 2px rgba(36, 21, 15, 0.08);
+        font-size: 1rem;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        color: var(--primary-dark);
+        background: #f0d9c7;
+        border-color: #9b6a54;
+        font-weight: 700;
+        box-shadow: inset 0 0 0 1px #9b6a54, 0 2px 4px rgba(36, 21, 15, 0.12);
+    }
+    button[data-baseweb="tab"] p {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    div[data-testid="stDataFrame"],
+    div[data-testid="stTable"],
+    iframe {
+        background: #ffffff;
+        border-radius: 8px;
     }
     </style>
     """,
@@ -246,42 +378,74 @@ with st.sidebar:
     st.header("Panel de control")
 
     view_mode = st.radio(
-        "Modo de busqueda",
-        ["Ultimos eventos", "Por radio"],
+        "Que quieres explorar?",
+        ["Eventos recientes", "Cerca de una zona"],
         horizontal=True,
     )
-    use_radius = view_mode == "Por radio"
+    use_radius = view_mode == "Cerca de una zona"
 
     min_mag, max_mag = st.slider(
-        "Rango de magnitud",
+        "Magnitud que quieres ver",
         min_value=0.0,
         max_value=9.0,
         value=(1.0, 7.5),
         step=0.1,
     )
 
-    days_back = st.slider("Dias hacia atras", 1, 30, 7)
-    limit = st.slider("Cantidad maxima", 50, 1000, 500, step=50)
+    days_back = st.slider(
+        "Periodo de tiempo",
+        1,
+        30,
+        7,
+        help="Cuantos dias recientes quieres consultar.",
+    )
+    limit = st.slider(
+        "Puntos a mostrar",
+        50,
+        1000,
+        500,
+        step=50,
+        help="Limita cuantos eventos se dibujan en el mapa para que cargue rapido.",
+    )
+
+    lat = LOCATION_PRESETS["Panama"]["lat"]
+    lon = LOCATION_PRESETS["Panama"]["lon"]
+    dist_km = LOCATION_PRESETS["Panama"]["radius"]
 
     st.divider()
-    st.subheader("Zona geografica")
-    preset = st.selectbox("Centro", list(LOCATION_PRESETS.keys()))
-    preset_data = LOCATION_PRESETS[preset]
+    if use_radius:
+        st.subheader("Buscar cerca de")
+        preset = st.selectbox("Lugar de referencia", list(LOCATION_PRESETS.keys()))
+        preset_data = LOCATION_PRESETS[preset]
 
-    if preset == "Personalizado":
-        lat = st.number_input("Latitud", value=preset_data["lat"], format="%.4f")
-        lon = st.number_input("Longitud", value=preset_data["lon"], format="%.4f")
-        dist_km = st.slider("Radio en km", 10, 2000, preset_data["radius"], step=10)
+        if preset == "Personalizado":
+            lat = st.number_input("Latitud", value=preset_data["lat"], format="%.4f")
+            lon = st.number_input("Longitud", value=preset_data["lon"], format="%.4f")
+            dist_km = st.slider("Distancia alrededor", 10, 2000, preset_data["radius"], step=10)
+        else:
+            lat = preset_data["lat"]
+            lon = preset_data["lon"]
+            dist_km = st.slider("Distancia alrededor", 10, 2000, preset_data["radius"], step=10)
+        st.caption("Muestra sismos dentro de esa distancia desde el lugar elegido.")
     else:
-        lat = preset_data["lat"]
-        lon = preset_data["lon"]
-        dist_km = st.slider("Radio en km", 10, 2000, preset_data["radius"], step=10)
+        st.caption("Eventos recientes muestra sismos globales. Usa Cerca de una zona para buscar por ubicacion.")
 
     st.divider()
-    cluster_radius = st.slider("Radio de clusters km", 10, 300, 100, step=10)
+    cluster_radius = st.slider(
+        "Agrupar zonas activas",
+        10,
+        300,
+        100,
+        step=10,
+        help=(
+            "Agrupa sismos cercanos entre si. Un valor pequeno crea grupos mas "
+            "estrictos; un valor grande une eventos mas separados."
+        ),
+    )
+    st.caption(f"Une sismos cercanos entre si hasta {cluster_radius} km.")
     map_style = st.selectbox(
-        "Estilo de mapa",
-        ["CartoDB positron", "OpenStreetMap", "CartoDB dark_matter"],
+        "Tipo de mapa",
+        ["CartoDB positron", "OpenStreetMap"],
     )
 
     refresh = st.button("Actualizar datos", width="stretch", type="primary")
@@ -289,13 +453,19 @@ with st.sidebar:
         st.cache_data.clear()
         st.rerun()
 
-    st.caption(f"API publica: {API_PUBLIC_URL}")
+    st.caption("Fuente: USGS Earthquake Catalog")
+    with st.expander("Guia rapida"):
+        st.write("1. Usa Eventos recientes para ver sismos globales.")
+        st.write("2. Usa Cerca de una zona para buscar alrededor de un pais o ciudad.")
+        st.write("3. Ajusta la magnitud para ocultar eventos muy pequenos.")
+        st.write("4. Puntos a mostrar solo controla cuantos aparecen en pantalla.")
+        st.write("5. Zonas activas agrupa sismos cercanos para detectar concentraciones.")
 
 st.markdown(
     """
     <div class="hero">
         <h1>Monitor Sismico Global</h1>
-        <p>Eventos recientes de USGS procesados con Mage AI, PostGIS, FastAPI y Streamlit.</p>
+        <p>Explora sismos recientes, busca por zona y detecta concentraciones de actividad sismica.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -304,17 +474,28 @@ st.markdown(
 health, health_error = safe_fetch("health")
 stats, stats_error = safe_fetch("earthquakes/stats")
 
+status_html = (
+    f"<span class='status-pill'>API conectada</span>"
+    if not health_error
+    else "<span class='status-pill' style='background:#fff1f0;color:#9f1d1d;border-color:#f3b4ad;'>API sin conexion</span>"
+)
+st.markdown(
+    f"""
+    <div class="info-strip">
+        {status_html}
+        <span><strong>Ultima actualizacion:</strong> {format_time(stats.get("last_update"))}</span>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 if health_error:
     st.error(f"No se pudo conectar con el backend: {health_error}")
-else:
-    st.markdown('<span class="status-pill">API conectada</span>', unsafe_allow_html=True)
 
-metric_cols = st.columns(5)
-metric_cols[0].metric("Eventos", format_number(stats.get("total_events")))
+metric_cols = st.columns(4)
+metric_cols[0].metric("Eventos en base", format_number(stats.get("total_events")))
 metric_cols[1].metric("Magnitud prom.", format_number(stats.get("avg_magnitude")))
 metric_cols[2].metric("Magnitud max.", format_number(stats.get("max_magnitude")))
 metric_cols[3].metric("Tsunamis", format_number(stats.get("total_tsunami")))
-metric_cols[4].metric("Ultima actualizacion", format_time(stats.get("last_update")))
 
 query_params = {
     "min_mag": min_mag,
@@ -348,7 +529,7 @@ st.markdown(
 )
 
 tab_map, tab_table, tab_clusters, tab_summary = st.tabs(
-    ["Mapa", "Eventos", "Clusters", "Resumen"]
+    ["Mapa", "Eventos", "Zonas activas", "Resumen"]
 )
 
 with tab_map:
@@ -357,14 +538,14 @@ with tab_map:
         fmap = build_map(rows, use_radius, lat, lon, dist_km, map_style)
         st_folium(fmap, width=None, height=570, key="main_map")
     with right:
-        st.subheader("Filtro activo")
-        st.metric("Resultados", len(rows))
+        st.subheader("Vista actual")
+        st.metric("Eventos visibles", len(rows))
         st.metric("Magnitud minima", f"{min_mag:.1f}")
         if use_radius:
-            st.metric("Radio", f"{dist_km:,} km")
-            st.metric("Centro", f"{lat:.2f}, {lon:.2f}")
+            st.metric("Distancia", f"{dist_km:,} km")
+            st.caption(f"Centro: {lat:.2f}, {lon:.2f}")
         else:
-            st.metric("Dias", days_back)
+            st.metric("Periodo", f"{days_back} dias")
             st.metric("Magnitud maxima", f"{max_mag:.1f}")
 
         if rows:
@@ -416,6 +597,10 @@ with tab_table:
         st.info("No hay eventos con los filtros actuales.")
 
 with tab_clusters:
+    st.caption(
+        "Una zona activa agrupa sismos cercanos entre si. Si aumentas el valor en el panel, "
+        "se unen eventos mas separados; si lo bajas, los grupos son mas estrictos."
+    )
     cluster_data, cluster_error = safe_fetch(
         "earthquakes/clusters",
         {"radius_km": cluster_radius},
