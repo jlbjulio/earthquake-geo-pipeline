@@ -151,6 +151,15 @@ st.markdown(
     .stApp {
         background: var(--app-bg);
         color: var(--ink);
+        font-family: "Segoe UI", Arial, sans-serif;
+        text-rendering: optimizeLegibility;
+    }
+    .stApp *,
+    div[data-baseweb="popover"] *,
+    div[data-baseweb="tooltip"] * {
+        text-shadow: none !important;
+        filter: none !important;
+        opacity: 1 !important;
     }
     [data-testid="stAppViewContainer"],
     [data-testid="stMain"] {
@@ -192,6 +201,9 @@ st.markdown(
     section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
         background: #fffaf7 !important;
         border-color: var(--sidebar-line) !important;
+        border-width: 1px !important;
+        box-shadow: none !important;
+        min-height: 2.65rem !important;
     }
     section[data-testid="stSidebar"] input,
     section[data-testid="stSidebar"] textarea,
@@ -199,6 +211,11 @@ st.markdown(
     section[data-testid="stSidebar"] div[data-baseweb="select"] span,
     section[data-testid="stSidebar"] div[data-baseweb="base-input"] * {
         color: var(--ink) !important;
+        font-family: "Segoe UI", Arial, sans-serif !important;
+        font-size: 0.98rem !important;
+        font-weight: 650 !important;
+        letter-spacing: 0 !important;
+        line-height: 1.35 !important;
     }
     section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
     section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
@@ -221,7 +238,17 @@ st.markdown(
         background: #fff8f0 !important;
         border: 1px solid var(--line) !important;
         border-radius: 8px !important;
-        box-shadow: 0 8px 24px rgba(36, 21, 15, 0.22) !important;
+        box-shadow: 0 6px 14px rgba(36, 21, 15, 0.18) !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
+        filter: none !important;
+        opacity: 1 !important;
+    }
+    div[data-baseweb="popover"] > div,
+    div[data-baseweb="tooltip"] > div {
+        background: #fffaf7 !important;
+        filter: none !important;
+        opacity: 1 !important;
     }
     div[data-baseweb="popover"] ul,
     div[data-baseweb="popover"] li,
@@ -229,6 +256,14 @@ st.markdown(
     div[data-baseweb="popover"] [role="option"] {
         background: #fffaf7 !important;
         color: var(--ink) !important;
+        font-family: "Segoe UI", Arial, sans-serif !important;
+        font-size: 1rem !important;
+        font-weight: 650 !important;
+        letter-spacing: 0 !important;
+        line-height: 1.35 !important;
+        min-height: 2.45rem !important;
+        text-rendering: optimizeLegibility !important;
+        -webkit-font-smoothing: auto !important;
     }
     div[data-baseweb="popover"] [role="option"]:hover,
     div[data-baseweb="popover"] [aria-selected="true"] {
