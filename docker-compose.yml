@@ -1,51 +1,45 @@
 services:
-  # ──────────────────────────────────────────────
-  # Base de datos espacial (PostgreSQL + PostGIS)
-  # ──────────────────────────────────────────────
+  # Base de datos espacial: PostgreSQL + PostGIS.
   postgis:
     image: postgis/postgis:16-3.4
-    container_name: geodb
+    container_name: earthquake_postgis
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-geodata}
       POSTGRES_USER: ${POSTGRES_USER:-geo_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geo_pass}
     ports:
-      - "5433:5432"
+      - "${POSTGIS_PORT:-5433}:5432"
     volumes:
       - postgis_data:/var/lib/postgresql/data
       - ./postgres/init:/docker-entrypoint-initdb.d
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U geo_user -d geodata"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-geo_user} -d ${POSTGRES_DB:-geodata}"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 8
+    restart: unless-stopped
 
-  # ──────────────────────────────────────────────
-  # Base de datos para metadatos de Mage AI
-  # ──────────────────────────────────────────────
+  # Base de datos de metadatos para Mage AI. No se publica al host para evitar choques de puertos.
   mage_db:
     image: postgres:16-alpine
-    container_name: mage_metadata_db
+    container_name: earthquake_mage_db
     environment:
       POSTGRES_DB: mage_metadata
       POSTGRES_USER: mage_user
       POSTGRES_PASSWORD: mage_pass
-    ports:
-      - "5434:5432"
     volumes:
       - mage_db_data:/var/lib/postgresql/data
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U mage_user -d mage_metadata"]
       interval: 10s
       timeout: 5s
-      retries: 5
+      retries: 8
+    restart: unless-stopped
 
-  # ──────────────────────────────────────────────
-  # Orquestador: Mage AI
-  # ──────────────────────────────────────────────
+  # Orquestador: Mage AI.
   mage:
     build: ./mage_project
-    container_name: mage_orchestrator
+    container_name: earthquake_mage
     depends_on:
       mage_db:
         condition: service_healthy
@@ -54,7 +48,7 @@ services:
     environment:
       MAGE_DATABASE_CONNECTION_URL: ${MAGE_DATABASE_CONNECTION_URL:-postgresql+psycopg2://mage_user:mage_pass@mage_db:5432/mage_metadata}
       PYTHONPATH: /home/src/earthquake_geo_pipeline
-      REQUIRE_USER_AUTHENTICATION: "true"
+      REQUIRE_USER_AUTHENTICATION: ${MAGE_REQUIRE_AUTH:-false}
       JWT_SECRET: ${MAGE_JWT_SECRET:-earthquake_geo_pipeline_local_secret}
       DEFAULT_OWNER_EMAIL: ${MAGE_OWNER_EMAIL:-admin@earthquake.local}
       DEFAULT_OWNER_USERNAME: ${MAGE_OWNER_USERNAME:-admin}
@@ -64,6 +58,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-geo_pass}
       POSTGRES_HOST: postgis
       POSTGRES_PORT: 5432
+      DATABASE_URL: postgresql://${POSTGRES_USER:-geo_user}:${POSTGRES_PASSWORD:-geo_pass}@postgis:5432/${POSTGRES_DB:-geodata}
     ports:
       - "${MAGE_PORT:-6789}:6789"
     volumes:
@@ -72,33 +67,49 @@ services:
     command: mage start earthquake_geo_pipeline
     restart: unless-stopped
 
-  # ──────────────────────────────────────────────
-  # Backend: FastAPI
-  # ──────────────────────────────────────────────
+  # Backend: FastAPI.
   backend:
     build: ./backend
-    container_name: fastapi_backend
+    container_name: earthquake_api
     depends_on:
       postgis:
         condition: service_healthy
     environment:
-      DATABASE_URL: ${DATABASE_URL:-postgresql://geo_user:geo_pass@postgis:5432/geodata}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-geo_user}:${POSTGRES_PASSWORD:-geo_pass}@postgis:5432/${POSTGRES_DB:-geodata}
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8001}:8000"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=5)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
     restart: unless-stopped
 
-  # ──────────────────────────────────────────────
-  # Dashboard: Streamlit
-  # ──────────────────────────────────────────────
+  # Dashboard: Streamlit.
   dashboard:
     build: ./dashboard
-    container_name: streamlit_dashboard
+    container_name: earthquake_dashboard
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
     environment:
       API_BASE_URL: http://backend:8000
+      API_PUBLIC_URL: ${API_PUBLIC_URL:-http://localhost:8001}
     ports:
-      - "8501:8501"
+      - "${DASHBOARD_PORT:-8501}:8501"
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8501/_stcore/health', timeout=5)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 8
     restart: unless-stopped
 
 volumes:

@@ -6,7 +6,8 @@ import requests
 import streamlit as st
 from streamlit_folium import st_folium
 
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8001").rstrip("/")
+API_PUBLIC_URL = os.getenv("API_PUBLIC_URL", API_BASE_URL).rstrip("/")
 
 st.set_page_config(
     page_title="Dashboard de Monitoreo Sismico",
@@ -81,7 +82,7 @@ with st.sidebar:
 
     st.caption(
         f"Datos obtenidos de USGS Earthquake Catalog via API propia con PostGIS. "
-        f"Backend: {API_BASE_URL}"
+        f"Backend: {API_PUBLIC_URL}"
     )
 
 
@@ -199,7 +200,7 @@ if results:
             f"Profundidad: {eq.get('depth', 'N/A')} km<br>"
             f"Hora: {eq.get('time', 'N/A')}<br>"
             f"Tsunami: {tsunami_text}<br>"
-            f"<a href='{API_BASE_URL}/api/v1/earthquakes/{eq['usgs_id']}' "
+            f"<a href='{API_PUBLIC_URL}/api/v1/earthquakes/{eq['usgs_id']}' "
             f"target='_blank'>Ver detalle</a>"
         )
 

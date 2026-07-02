@@ -30,17 +30,14 @@ def get_engine():
 
 def read_raw_earthquakes(engine) -> pd.DataFrame:
     """Lee datos crudos desde la tabla raw_earthquakes en PostGIS."""
-    query = """
+    query = text("""
         SELECT usgs_id, mag, place, time, updated, magType AS magtype, tsunami, alert,
                status, sig, depth, longitude, latitude
         FROM raw_earthquakes
         WHERE longitude IS NOT NULL AND latitude IS NOT NULL
-    """
-    conn = engine.raw_connection()
-    try:
-        return pd.read_sql(query, conn)
-    finally:
-        conn.close()
+    """)
+    with engine.connect() as conn:
+        return pd.read_sql_query(query, conn)
 
 
 def transform_to_geodataframe(df: pd.DataFrame) -> gpd.GeoDataFrame:

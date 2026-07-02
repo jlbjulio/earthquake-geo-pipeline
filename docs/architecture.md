@@ -1,241 +1,145 @@
-# Documento de Especificación Técnica
+# Documento de Especificacion Tecnica
 
 **Integrantes:** Julio Lara (8-997-2325), Joseph Batista (8-1009-1500)
 
-## Arquitectura del Proyecto
+## Descripcion General
 
-### Descripción General
+Este proyecto implementa un pipeline end-to-end para datos geoespaciales de sismos:
 
-Pipeline E2E de datos geoespaciales que integra:
+1. USGS Earthquake API publica eventos en formato GeoJSON.
+2. Mage AI orquesta el pipeline `earthquake_pipeline`.
+3. `extract_load.py` consulta USGS y carga datos crudos en `raw_earthquakes`.
+4. `transform_load.py` limpia datos y genera geometrias `Point`.
+5. PostgreSQL + PostGIS almacena la tabla final `earthquakes`.
+6. FastAPI expone endpoints REST con consultas espaciales.
+7. Streamlit + Folium visualiza KPIs, mapa, tabla y clusters.
 
-1. **Fuente**: USGS Earthquake API (GeoJSON en tiempo real)
-2. **Orquestación**: Mage AI programa la ejecución cada 12 horas
-3. **Extracción y Carga (Raw)**: Scripts Python consultan API y almacenan datos crudos directamente en PostgreSQL/PostGIS
-4. **Transformación**: GeoPandas lee datos crudos desde PostGIS, limpia, valida y convierte coordenadas a geometrías Point
-5. **Almacenamiento Final**: PostgreSQL + PostGIS con tabla optimizada e índices espaciales GIST
-6. **Exposición**: FastAPI con endpoints RESTful y consultas espaciales SQL (ST_DWithin, ST_ClusterDBSCAN)
-7. **Visualización**: Streamlit + Folium para mapa interactivo
+## Stack Tecnologico
 
-### Stack Tecnológico
+| Componente      | Tecnologia                  |
+| --------------- | --------------------------- |
+| Orquestacion    | Mage AI                     |
+| Base de datos   | PostgreSQL 16 + PostGIS 3.4 |
+| Procesamiento   | Python, Pandas, GeoPandas   |
+| Backend/API     | FastAPI, Uvicorn, SQLAlchemy |
+| Dashboard       | Streamlit, Folium           |
+| Infraestructura | Docker, Docker Compose      |
 
-| Componente       | Tecnología                       |
-|------------------|----------------------------------|
-| Orquestación     | Mage AI                          |
-| Base de Datos    | PostgreSQL 16 + PostGIS 3.4      |
-| Procesamiento    | Python, Pandas, GeoPandas        |
-| Backend/API      | FastAPI, Uvicorn, SQLAlchemy     |
-| Visualización    | Streamlit, Folium, Plotly        |
-| Infraestructura  | Docker, Docker Compose           |
+## Diagrama de Arquitectura
 
-### Diagrama de Arquitectura
-
-```
-                     ┌─────────────────────────────────────┐
-                     │       USGS Earthquake API           │
-                     │       (fuente geoespacial)          │
-                     └──────────────┬──────────────────────┘
-                                    │ HTTP GET
-                                    ▼
-┌─────────────────────┐    ┌──────────────────────────────────────┐
-│                     │    │  Mage AI (Orquestador)               │
-│  Programa tareas    │◄───│  Pipeline: earthquake_pipeline       │
-│  cada 12 horas      │    │  Bloques: extract_load → transform  │
-│                     │    └──────────┬───────────────────────────┘
-└─────────────────────┘               │ orquesta
-                                      ▼
-          ┌──────────────────────────────────────────────────┐
-          │  Scripts Python (Extract & Load)                 │
-          │  extract_load.py                                 │
-          │  • Consulta API USGS                             │
-          │  • Almacena datos crudos sin transformar         │
-          └──────────────────────┬───────────────────────────┘
-                                 │ INSERT raw_earthquakes
-                                 ▼
-          ┌──────────────────────────────────────────────────┐
-          │  PostgreSQL + PostGIS (Base de Datos Espacial)   │
-          │  ┌────────────────────────────────────────────┐  │
-          │  │ raw_earthquakes (datos crudos)             │  │
-          │  │ • Sin geometría, solo lng/lat numéricos    │  │
-          │  └────────────────────────────────────────────┘  │
-          └──────────────────────┬───────────────────────────┘
-                                 │ SELECT (Lectura SQL)
-                                 ▼
-          ┌──────────────────────────────────────────────────┐
-          │  Pandas / GeoPandas (Transformación Espacial)   │
-          │  transform_load.py                              │
-          │  • Limpieza de valores nulos                    │
-          │  • Conversión lng/lat → geometrías Point        │
-          │  • CRS EPSG:4326                                │
-          │  • Validación de coordenadas                    │
-          └──────────────────────┬───────────────────────────┘
-                                 │ INSERT con geometrías
-                                 ▼
-          ┌──────────────────────────────────────────────────┐
-          │  PostgreSQL + PostGIS (Tabla Final Optimizada)   │
-          │  ┌────────────────────────────────────────────┐  │
-          │  │ earthquakes                                │  │
-          │  │ • location GEOGRAPHY(Point, 4326)          │  │
-          │  │ • geom GEOMETRY(Point, 4326)               │  │
-          │  │ • Índices GIST espaciales                  │  │
-          │  └────────────────────────────────────────────┘  │
-          └──────────────────────┬───────────────────────────┘
-                                 │ Consultas espaciales SQL
-                                 ▼
-          ┌──────────────────────────────────────────────────┐
-          │  FastAPI + Uvicorn (Backend / API RESTful)       │
-          │  • GET  /api/v1/earthquakes                      │
-          │  • GET  /api/v1/earthquakes/radius?lat&lon&dist  │
-          │  • GET  /api/v1/earthquakes/stats                │
-          │  • GET  /api/v1/earthquakes/clusters             │
-          │  • Swagger UI en /docs                           │
-          └──────────────────────┬───────────────────────────┘
-                                 │ HTTP JSON
-                                 ▼
-          ┌──────────────────────────────────────────────────┐
-          │  Streamlit + Folium (Dashboard Interactivo)      │
-          │  • Mapa interactivo con círculos por magnitud    │
-          │  • KPIs: total, mag promedio, tsunamis           │
-          │  • Filtros: magnitud, días, búsqueda radial      │
-          │  • Clusters DBSCAN                               │
-           │  • Boton de refresco manual                    │
-          └──────────────────────┬───────────────────────────┘
-                                 │ Visualización
-                                 ▼
-                    ┌──────────────────────┐
-                    │  Usuario de Negocio  │
-                    └──────────────────────┘
+```text
+USGS Earthquake API
+        |
+        v
+Mage AI: earthquake_pipeline
+        |
+        v
+scripts/extract_load.py
+        |
+        v
+PostGIS: raw_earthquakes
+        |
+        v
+scripts/transform_load.py
+        |
+        v
+PostGIS: earthquakes + indices GIST
+        |
+        v
+FastAPI: /api/v1/*
+        |
+        v
+Streamlit + Folium
 ```
 
-### Flujo de Datos (Etapas)
+## Puertos
 
-| Etapa | Descripción | Componente |
-|-------|-------------|------------|
-| 1 | Consultar API externa | `requests.get(USGS_URL)` |
-| 2 | Almacenar datos crudos | `raw_earthquakes` (PostGIS) |
-| 3 | Leer datos crudos | `pd.read_sql("SELECT ...", engine)` |
-| 4 | Limpiar y transformar | GeoPandas → `Point(lng, lat)` |
-| 5 | Cargar tabla final | `earthquakes` con `GEOGRAPHY/GEOMETRY` |
-| 6 | Exponer vía API | FastAPI con consultas espaciales |
-| 7 | Visualizar | Streamlit + Folium |
+| Servicio   | Puerto host | URL                        |
+| ---------- | ----------- | -------------------------- |
+| PostGIS    | 5433        | localhost:5433             |
+| Mage AI    | 6789        | http://localhost:6789      |
+| FastAPI    | 8001        | http://localhost:8001      |
+| Swagger UI | 8001        | http://localhost:8001/docs |
+| Streamlit  | 8501        | http://localhost:8501      |
 
-### Puerto de Servicios
+El backend usa `8001` en el host para evitar choques con otros proyectos FastAPI que suelen usar `8000`. Dentro de Docker, Streamlit se comunica con `http://backend:8000`.
 
-| Servicio    | Puerto | URL                        |
-|-------------|--------|----------------------------|
-| PostGIS     | 5433   | localhost:5433              |
-| Mage AI DB  | 5434   | localhost:5434              |
-| Mage AI     | 6789*  | http://localhost:6789       |
-| FastAPI     | 8000   | http://localhost:8000       |
-| Swagger UI  | 8000   | http://localhost:8000/docs  |
-| Streamlit   | 8501   | http://localhost:8501       |
+## Pipeline de Mage AI
 
-\* El puerto host de Mage AI se puede cambiar con la variable `MAGE_PORT` en `.env` si `6789` ya esta en uso.
+Pipeline: `earthquake_pipeline`
 
-### Estructura del Pipeline (Mage AI)
+| Bloque | Tipo | Script | Funcion |
+| ------ | ---- | ------ | ------- |
+| `extract_and_load` | Data Loader | `scripts/extract_load.py` | Consulta USGS y hace upsert en `raw_earthquakes` |
+| `transform_and_load` | Data Exporter | `scripts/transform_load.py` | Genera geometrias y hace upsert en `earthquakes` |
 
-Pipeline: **earthquake_pipeline**
+Trigger: cada 12 horas.
 
-```
-Block 1: extract_and_load (data_loader)
-  ├── Tipo: Data Loader
-  ├── Script: extract_load.py
-  ├── Acción: Consulta USGS API → INSERT en raw_earthquakes
-  └── Retry: 2 intentos, 10s de espera
+Ejecucion manual:
 
-Block 2: transform_and_load (data_exporter)
-  ├── Tipo: Data Exporter
-  ├── Script: transform_load.py
-  ├── Acción: SELECT desde raw_earthquakes → GeoPandas → INSERT en earthquakes
-  └── Retry: 2 intentos, 10s de espera
-
-Trigger: Cada 12 horas (cron: 0 */12 * * *)
+```bash
+docker compose exec -w /home/src mage mage run earthquake_geo_pipeline earthquake_pipeline
 ```
 
-## Modelado Entidad-Relación (ERD)
+## Modelo de Datos
 
-### Tabla: raw_earthquakes (datos crudos)
+### `raw_earthquakes`
 
-| Columna        | Tipo              | Descripción                    |
-|----------------|-------------------|--------------------------------|
-| id (PK)        | VARCHAR(50)       | Identificador único            |
-| usgs_id (UQ)   | VARCHAR(100)      | ID de USGS (upsert key)        |
-| mag            | NUMERIC(6,2)      | Magnitud del sismo             |
-| place          | TEXT              | Descripción de ubicación       |
-| time           | TIMESTAMPTZ       | Fecha/hora del evento          |
-| updated        | TIMESTAMPTZ       | Última actualización           |
-| tz             | INTEGER           | Zona horaria                   |
-| url            | TEXT              | URL del detalle                |
-| felt           | INTEGER           | Reportes de personas           |
-| cdi            | NUMERIC(4,2)      | Intensidad instrumental        |
-| mmi            | NUMERIC(4,2)      | Intensidad mercalli            |
-| alert          | VARCHAR(20)       | Nivel de alerta                |
-| status         | VARCHAR(20)       | Estado del evento              |
-| tsunami        | INTEGER           | 1 si generó tsunami            |
-| sig            | INTEGER           | Significancia                  |
-| magType        | VARCHAR(20)       | Tipo de magnitud               |
-| longitude      | NUMERIC(10,6)     | Longitud (cruda)               |
-| latitude       | NUMERIC(10,6)     | Latitud (cruda)                |
-| depth          | NUMERIC(10,2)     | Profundidad (km)               |
-| ingested_at    | TIMESTAMPTZ       | Fecha de ingesta               |
+Tabla cruda con los campos principales de USGS:
 
-### Tabla: earthquakes (final optimizada con geometrías)
+| Campo | Tipo | Uso |
+| ----- | ---- | --- |
+| `id` | varchar | ID de la feature |
+| `usgs_id` | varchar unique | Clave de upsert |
+| `mag` | numeric | Magnitud |
+| `place` | text | Lugar reportado |
+| `time` | timestamptz | Hora del evento |
+| `longitude` | numeric | Longitud |
+| `latitude` | numeric | Latitud |
+| `depth` | numeric | Profundidad |
+| `ingested_at` | timestamptz | Fecha de carga |
 
-| Columna        | Tipo                    | Descripción                    |
-|----------------|-------------------------|--------------------------------|
-| id (PK)        | SERIAL                  | Identificador autoincremental  |
-| usgs_id (UQ)   | VARCHAR(100)            | ID de USGS (upsert key)        |
-| mag            | NUMERIC(6,2)            | Magnitud del sismo             |
-| place          | TEXT                    | Descripción de ubicación       |
-| time           | TIMESTAMPTZ             | Fecha/hora del evento          |
-| updated        | TIMESTAMPTZ             | Última actualización           |
-| magType        | VARCHAR(20)             | Tipo de magnitud               |
-| tsunami        | INTEGER DEFAULT 0       | 1 si generó tsunami            |
-| alert          | VARCHAR(20)             | Nivel de alerta                |
-| status         | VARCHAR(20)             | Estado del evento              |
-| sig            | INTEGER                 | Significancia                  |
-| depth          | NUMERIC(10,2)           | Profundidad (km)               |
-| **location**   | **GEOGRAPHY(Point, 4326)** | Ubicación geodésica         |
-| **geom**       | **GEOMETRY(Point, 4326)**  | Geometría para operaciones   |
-| processed_at   | TIMESTAMPTZ             | Fecha de procesamiento         |
+### `earthquakes`
 
-### Índices Espaciales
+Tabla final optimizada:
 
-| Índice                          | Tipo | Columna   | Propósito                     |
-|---------------------------------|------|-----------|-------------------------------|
-| `idx_earthquakes_location`      | GIST | location  | Búsqueda geodésica por radio  |
-| `idx_earthquakes_geom`          | GIST | geom      | Clustering espacial (DBSCAN)  |
-| `idx_earthquakes_mag`           | BTREE| mag DESC  | Filtro por magnitud           |
-| `idx_earthquakes_time`          | BTREE| time DESC | Ordenamiento temporal         |
-| `idx_earthquakes_tsunami`       | BTREE| tsunami   | Filtro de tsunamis            |
+| Campo | Tipo | Uso |
+| ----- | ---- | --- |
+| `id` | serial primary key | ID interno |
+| `usgs_id` | varchar unique | Clave USGS |
+| `mag` | numeric | Magnitud |
+| `place` | text | Lugar |
+| `time` | timestamptz | Hora del evento |
+| `location` | geography(Point, 4326) | Distancias geodesicas |
+| `geom` | geometry(Point, 4326) | Clustering e indices espaciales |
+| `processed_at` | timestamptz | Fecha de procesamiento |
 
-### Estrategia de Columnas Espaciales
+## Indices y Funciones Espaciales
 
-| Columna   | Tipo            | SRID | Propósito                         |
-|-----------|-----------------|------|-----------------------------------|
-| `location`| GEOGRAPHY(Point)| 4326 | Cálculos precisos sobre el       |
-|           |                 |      | elipsoide (distancias en metros)  |
-| `geom`    | GEOMETRY(Point) | 4326 | Operaciones geométricas           |
-|           |                 |      | (clusters, bounding boxes)        |
+| Objeto | Proposito |
+| ------ | --------- |
+| `idx_earthquakes_location` | Busqueda radial con `ST_DWithin` |
+| `idx_earthquakes_geom` | Operaciones geometricas y DBSCAN |
+| `idx_earthquakes_mag` | Filtros por magnitud |
+| `idx_earthquakes_time` | Orden temporal |
+| `get_earthquake_summary()` | KPIs agregados |
+| `get_earthquake_clusters(radius_km)` | Clusters espaciales |
 
-### Consultas Espaciales Implementadas
+## Endpoints
 
-1. **Búsqueda radial** (`ST_DWithin`): Encuentra sismos en un radio (metros)
-2. **Clustering** (`ST_ClusterDBSCAN`): Agrupa sismos por densidad espacial
-3. **Distancias** (`ST_Distance`): Calcula distancia geodésica precisa
-4. **Proyección** (`ST_X/ST_Y`): Extrae coordenadas de geometrías
+| Metodo | Endpoint | Descripcion |
+| ------ | -------- | ----------- |
+| GET | `/api/v1/health` | Estado del backend |
+| GET | `/api/v1/earthquakes` | Lista filtrable |
+| GET | `/api/v1/earthquakes/radius` | Busqueda por radio |
+| GET | `/api/v1/earthquakes/stats` | Estadisticas |
+| GET | `/api/v1/earthquakes/clusters` | Clusters DBSCAN |
+| GET | `/api/v1/earthquakes/{usgs_id}` | Detalle por evento |
 
-### Funciones Almacenadas
+## Verificacion
 
-- `get_earthquake_clusters(radius_km)`: Clusters DBSCAN de última semana
-- `get_earthquake_summary()`: Estadísticas agregadas del dataset
-
-## Estrategia de Normalización
-
-- **raw_earthquakes**: Tabla plana sin normalizar. Almacena todos los campos
-  tal cual llegan de la API. Sin geometrías PostGIS.
-- **earthquakes**: Tabla optimizada con columnas espaciales (GEOGRAPHY y
-  GEOMETRY). Contiene solo los campos relevantes para consultas analíticas
-  y geoespaciales.
-- Las coordenadas se almacenan como POINT con SRID 4326 (WGS84).
-- La separación raw/final permite reprocesar datos sin pérdida de
-  información original.
+```bash
+docker compose ps
+curl http://localhost:8001/api/v1/health
+curl http://localhost:8001/api/v1/earthquakes/stats
+```

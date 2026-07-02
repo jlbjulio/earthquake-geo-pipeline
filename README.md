@@ -1,25 +1,25 @@
-# Proyecto Semestral — Arquitectura y Exposición de Datos Geoespaciales
+# Proyecto Semestral - Arquitectura y Exposicion de Datos Geoespaciales
 
 **Integrantes:**
-- Julio Lara — 8-997-2325
-- Joseph Batista — 8-1009-1500
+- Julio Lara - 8-997-2325
+- Joseph Batista - 8-1009-1500
 
-Pipeline end-to-end de datos geoespaciales con orquestación en Mage AI, almacenamiento PostGIS, backend FastAPI y dashboard Streamlit.
+Pipeline end-to-end de datos geoespaciales con orquestacion en Mage AI, almacenamiento PostGIS, backend FastAPI y dashboard Streamlit.
 
 ## Stack
 
-| Componente      | Tecnología                   |
-| --------------- | ---------------------------- |
-| Orquestacion    | Mage AI                      |
-| Base de Datos   | PostgreSQL 16 + PostGIS 3.4  |
-| Procesamiento   | Python, Pandas, GeoPandas    |
+| Componente      | Tecnologia                  |
+| --------------- | --------------------------- |
+| Orquestacion    | Mage AI                     |
+| Base de Datos   | PostgreSQL 16 + PostGIS 3.4 |
+| Procesamiento   | Python, Pandas, GeoPandas   |
 | Backend / API   | FastAPI, Uvicorn, SQLAlchemy |
-| Visualizacion   | Streamlit, Folium            |
-| Infraestructura | Docker, Docker Compose       |
+| Visualizacion   | Streamlit, Folium           |
+| Infraestructura | Docker, Docker Compose      |
 
 ## Arquitectura
 
-```
+```text
 USGS Earthquake API
         |
         v
@@ -39,14 +39,14 @@ USGS Earthquake API
         |
         | consultas espaciales SQL
         v
-  FastAPI + Uvicorn  (5 endpoints REST + Swagger)
+  FastAPI + Uvicorn  (endpoints REST + Swagger)
         |
         | HTTP JSON
         v
   Streamlit + Folium  (dashboard con mapa interactivo)
         |
         v
-  Usuario de Negocio
+  Usuario
         ^
         |
   Mage AI  (orquesta pipeline cada 12h)
@@ -57,34 +57,36 @@ USGS Earthquake API
 | Servicio   | Puerto | URL                        |
 | ---------- | ------ | -------------------------- |
 | PostGIS    | 5433   | localhost:5433             |
-| Mage AI    | 6789*  | http://localhost:6789      |
-| FastAPI    | 8000   | http://localhost:8000      |
-| Swagger UI | 8000   | http://localhost:8000/docs |
+| Mage AI    | 6789   | http://localhost:6789      |
+| FastAPI    | 8001   | http://localhost:8001      |
+| Swagger UI | 8001   | http://localhost:8001/docs |
 | Streamlit  | 8501   | http://localhost:8501      |
+
+El backend se publica en `8001` para evitar conflictos con otros proyectos FastAPI que suelen usar `8000`. Dentro de Docker, los servicios siguen comunicandose con el backend por `http://backend:8000`.
 
 ## Estructura del Proyecto
 
-```
+```text
 .
 +-- docker-compose.yml
-+-- postgres/init/01_init.sql          DDL con PostGIS
++-- postgres/init/01_init.sql
 +-- scripts/
-|   +-- extract_load.py               Extrae API y carga raw a PostGIS
-|   +-- transform_load.py             Lee raw, transforma con GeoPandas, carga final
+|   +-- extract_load.py
+|   +-- transform_load.py
 +-- mage_project/
-|   +-- pipelines/earthquake_pipeline/ Pipeline de Mage AI
-|   |   +-- blocks/                   extract_load + transform_load
-|   |   +-- triggers/schedule_12h.yaml  Trigger cada 12 horas
+|   +-- pipelines/earthquake_pipeline/
+|   |   +-- blocks/
+|   |   +-- triggers/schedule_12h.yaml
 +-- backend/
 |   +-- app/
-|       +-- main.py                   FastAPI entrypoint
-|       +-- models.py                 Modelo SQLAlchemy con Geography/Geometry
-|       +-- routers/earthquakes.py    5 endpoints espaciales
+|       +-- main.py
+|       +-- models.py
+|       +-- routers/earthquakes.py
 +-- dashboard/
-|   +-- app.py                        Streamlit + Folium
+|   +-- app.py
 +-- docs/
-|   +-- architecture.md               Especificacion tecnica
-|   +-- diagrama_arquitectura.drawio   Diagrama en Draw.io
+|   +-- architecture.md
+|   +-- diagrama_arquitectura.drawio
 +-- presentacion_final.md
 ```
 
@@ -92,36 +94,46 @@ USGS Earthquake API
 
 | Metodo | Endpoint                        | Descripcion                            |
 | ------ | ------------------------------- | -------------------------------------- |
-| GET    | `/api/v1/earthquakes`           | Lista con filtros (magnitud, tiempo)   |
-| GET    | `/api/v1/earthquakes/radius`    | Busqueda radial con ST_DWithin         |
+| GET    | `/api/v1/health`                | Healthcheck del backend                |
+| GET    | `/api/v1/earthquakes`           | Lista con filtros de magnitud y tiempo |
+| GET    | `/api/v1/earthquakes/radius`    | Busqueda radial con `ST_DWithin`       |
 | GET    | `/api/v1/earthquakes/stats`     | Estadisticas via funcion SQL           |
-| GET    | `/api/v1/earthquakes/clusters`  | Clusters espaciales (ST_ClusterDBSCAN) |
-| GET    | `/api/v1/earthquakes/{usgs_id}` | Detalle por ID                         |
+| GET    | `/api/v1/earthquakes/clusters`  | Clusters espaciales con DBSCAN         |
+| GET    | `/api/v1/earthquakes/{usgs_id}` | Detalle por ID de USGS                 |
 
 ## Uso
 
 ```bash
-docker-compose up -d
+docker compose up -d --build
 ```
 
 Luego abrir:
 
 - Dashboard: http://localhost:8501
-- API Docs: http://localhost:8000/docs
+- API Docs: http://localhost:8001/docs
 - Mage AI: http://localhost:6789
 
-Si el puerto `6789` ya esta ocupado, agrega `MAGE_PORT` en tu archivo `.env` antes de levantar los contenedores:
+Para ejecutar el pipeline manualmente desde consola:
 
 ```bash
-MAGE_PORT=6790
+docker compose exec -w /home/src/earthquake_geo_pipeline mage python scripts/extract_load.py
+docker compose exec -w /home/src/earthquake_geo_pipeline mage python scripts/transform_load.py
 ```
 
-En ese caso, abre Mage AI en `http://localhost:6790`.
+Tambien se puede ejecutar desde la UI de Mage AI abriendo el pipeline `earthquake_pipeline`. El trigger incluido queda configurado para correr cada 12 horas.
 
-El pipeline se ejecuta automaticamente cada 12 horas. Tambien se puede ejecutar manualmente desde la UI de Mage AI.
+## Variables de entorno principales
 
-Mage AI arranca este proyecto con el nombre `earthquake_geo_pipeline`.
+Copiar `.env.example` a `.env` si hace falta personalizar puertos o credenciales.
+
+```env
+POSTGIS_PORT=5433
+BACKEND_PORT=8001
+MAGE_PORT=6789
+DASHBOARD_PORT=8501
+API_PUBLIC_URL=http://localhost:8001
+```
 
 ## Datos
 
-Fuente: [USGS Earthquake Catalog](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php) — API publica sin autenticacion, formato GeoJSON, actualizada en tiempo real.
+Fuente: [USGS Earthquake Catalog](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php). Es una API publica en formato GeoJSON, actualizada continuamente y sin autenticacion.

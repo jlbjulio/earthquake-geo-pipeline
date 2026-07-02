@@ -1,148 +1,137 @@
-# Presentación Final: Proyecto Semestral
+# Presentacion Final: Proyecto Semestral
 
-## Arquitectura y Exposición de Datos Geoespaciales
+## Arquitectura y Exposicion de Datos Geoespaciales
 
 ### Datos del Proyecto
-- **Curso**: Tópicos Especiales II
-- **Integrantes**: Julio Lara (8-997-2325), Joseph Batista (8-1009-1500)
-- **Stack**: Mage AI, PostgreSQL/PostGIS, Python/GeoPandas, FastAPI, Streamlit, Docker
-- **Fuente de Datos**: USGS Earthquake Catalog (API pública, GeoJSON en tiempo real)
+
+- **Curso:** Topicos Especiales II
+- **Integrantes:** Julio Lara (8-997-2325), Joseph Batista (8-1009-1500)
+- **Stack:** Mage AI, PostgreSQL/PostGIS, Python/GeoPandas, FastAPI, Streamlit, Docker
+- **Fuente:** USGS Earthquake Catalog, API publica GeoJSON en tiempo real
 
 ---
 
 ## Flujo Completo E2E
 
-```
-1. USGS Earthquake API (fuente externa)
-         ↓ HTTP GET
-2. Mage AI programa tareas cada 12h
-         ↓ Ejecuta pipeline
-3. Extract & Load (extract_load.py)
-         ↓ Consulta API y escribe en PostgreSQL
-4. raw_earthquakes (datos crudos en PostGIS)
-         ↓ Lectura SQL
-5. Transform & Load (transform_load.py con GeoPandas)
-         ↓ Limpia, crea geometrías Point, escribe tabla final
-6. earthquakes (tabla optimizada con índices GIST en PostGIS)
-         ↓ Consultas espaciales SQL
-7. FastAPI (endpoints RESTful /api/v1/earthquakes/*)
-         ↓ HTTP JSON
-8. Streamlit + Folium (dashboard interactivo con mapa)
-         ↓ Visualización
-9. Usuario de negocio
+```text
+1. USGS Earthquake API
+       |
+2. Mage AI ejecuta earthquake_pipeline
+       |
+3. Extract & Load: scripts/extract_load.py
+       |
+4. PostGIS: raw_earthquakes
+       |
+5. Transform & Load: scripts/transform_load.py
+       |
+6. PostGIS: earthquakes con GEOGRAPHY, GEOMETRY e indices GIST
+       |
+7. FastAPI: endpoints REST /api/v1/*
+       |
+8. Streamlit + Folium: dashboard interactivo
 ```
 
 ---
 
-## Demostración del Flujo Completo
+## Demostracion
 
-### 1. Inicio de Infraestructura
+### 1. Levantar infraestructura
+
 ```bash
-docker-compose up -d
-```
-Se levantan 5 contenedores: PostGIS, Mage DB, Mage AI, FastAPI, Streamlit.
-
-### 2. Orquestación (Mage AI)
-- Pipeline `earthquake_pipeline` ejecuta cada 12h automáticamente
-- Trigger configurado en `triggers/schedule_12h.yaml`
-- Se puede ejecutar manualmente desde la UI de Mage en http://localhost:6789
-
-### 3. Extracción y Carga (Extract & Load)
-- Script `scripts/extract_load.py` consulta la API de USGS
-- Obtiene ~100-500 eventos sísmicos recientes
-- Almacena datos crudos en tabla `raw_earthquakes` (upsert por usgs_id)
-
-### 4. Transformación Espacial (Transform & Load)
-- Script `scripts/transform_load.py` lee de `raw_earthquakes`
-- GeoPandas convierte coordenadas (lng, lat) a geometrías `Point` (EPSG:4326)
-- Limpia valores nulos, filtra coordenadas inválidas
-- Carga en tabla `earthquakes` con columnas espaciales:
-  - `location GEOGRAPHY(Point, 4326)` → cálculos geodésicos
-  - `geom GEOMETRY(Point, 4326)` → operaciones geométricas
-
-### 5. Consulta desde FastAPI
-- `GET /api/v1/earthquakes` → Lista con filtros (magnitud, tiempo)
-- `GET /api/v1/earthquakes/radius?lat=...&lon=...&dist_km=...` → Búsqueda radial con `ST_DWithin`
-- `GET /api/v1/earthquakes/stats` → Estadísticas con funciones SQL
-- `GET /api/v1/earthquakes/clusters` → Clusters DBSCAN con `ST_ClusterDBSCAN`
-- Documentación interactiva en http://localhost:8000/docs (Swagger)
-
-### 6. Dashboard en Streamlit
-- http://localhost:8501
-- KPIs: total eventos, magnitud promedio/máxima, tsunamis
-- Mapa Folium interactivo con círculos coloreados por magnitud
-- Filtros: magnitud mínima, días, búsqueda radial
-- Clusters sísmicos DBSCAN
-- Auto-refresh cada 30 segundos
-
----
-
-## Funcionalidades Espaciales Implementadas
-
-| Funcionalidad | Tecnología | Consulta SQL |
-|---|---|---|
-| Almacenamiento de geometrías | PostGIS `GEOGRAPHY(Point, 4326)` | `ST_GeomFromText()` |
-| Índices espaciales | PostGIS GIST | `CREATE INDEX ... USING GIST` |
-| Búsqueda por radio | FastAPI + PostGIS | `ST_DWithin(location, target, radius)` |
-| Cálculo de distancias | FastAPI + PostGIS | `ST_Distance(location::geography, target)` |
-| Clustering espacial | FastAPI + PostGIS | `ST_ClusterDBSCAN(geom, eps, minpoints)` |
-| Visualización en mapa | Streamlit + Folium | `folium.CircleMarker()` |
-
----
-
-## Resultados Esperados
-
-1. **Datos actualizados cada 12h** automáticamente por Mage AI
-2. **API documentada** con Swagger en `/docs`
-3. **Dashboard interactivo** con mapa en tiempo real
-4. **Consultas espaciales** funcionales (radio, clusters, estadísticas)
-5. **Infraestructura reproducible** con Docker Compose
-
----
-
-## Capturas de Pantalla (simuladas)
-
-```
-┌─────────────────────────────────────────────────────────┐
-│  Dashboard de Monitoreo Sismico                        │
-│  ┌──────┐ ┌──────┐ ┌──────┐ ┌──────┐                    │
-│  │Total │ │ Mag  │ │ Mag  │ │Tsuna-│                    │
-│  │Eventos│ │Prom. │ │ Máx. │ │ mis  │                    │
-│  │ 127   │ │ 2.4  │ │ 6.8  │ │  3   │                    │
-│  └──────┘ └──────┘ └──────┘ └──────┘                    │
-│  ┌──────────────────────────────────────────────────┐   │
-│  │  Mapa Mundial con eventos sismicos              │   │
-│  │  ● Magnitud < 2 (verde)                           │   │
-│  │  ● Magnitud 2-4 (amarillo)                        │   │
-│  │  ● Magnitud 4-6 (naranja)                         │   │
-│  │  ● Magnitud > 6 (rojo)                            │   │
-│  └──────────────────────────────────────────────────┘   │
-│  ┌─────┬──────────────┬──────────────────┬──────┐       │
-│  │ Mag │    Place     │       Time       │Depth │       │
-│  ├─────┼──────────────┼──────────────────┼──────┤       │
-│  │ 6.8 │ 12km S of... │2025-01-15 03:22  │ 10.0 │       │
-│  │ 4.2 │ 45km E of... │2025-01-15 02:15  │ 35.2 │       │
-│  └─────┴──────────────┴──────────────────┴──────┘       │
-└─────────────────────────────────────────────────────────┘
+docker compose up -d --build
 ```
 
----
-
-## Enlaces
+Servicios levantados:
 
 | Servicio | URL |
-|---|---|
-| Dashboard (Streamlit) | http://localhost:8501 |
-| API Docs (Swagger) | http://localhost:8000/docs |
+| -------- | --- |
+| Dashboard | http://localhost:8501 |
+| API Docs | http://localhost:8001/docs |
 | Mage AI | http://localhost:6789 |
-| FastAPI | http://localhost:8000 |
+| PostGIS | localhost:5433 |
+
+El API se publica en `8001` para no chocar con otros proyectos FastAPI que usen `8000`.
+
+### 2. Ejecutar pipeline
+
+Desde Mage AI:
+
+- Abrir http://localhost:6789
+- Entrar al pipeline `earthquake_pipeline`
+- Ejecutar los bloques `extract_and_load` y `transform_and_load`
+
+Desde consola:
+
+```bash
+docker compose exec -w /home/src mage mage run earthquake_geo_pipeline earthquake_pipeline
+```
+
+### 3. Verificar datos
+
+```bash
+curl http://localhost:8001/api/v1/earthquakes/stats
+curl "http://localhost:8001/api/v1/earthquakes?limit=5&days_back=30"
+```
 
 ---
 
-## Conclusiones
+## Componentes
 
-- Se implementó un pipeline E2E completo de datos geoespaciales
-- La arquitectura sigue el diagrama propuesto: API → Extract&Load → PostGIS → GeoPandas → PostGIS → FastAPI → Streamlit
-- PostGIS permite consultas espaciales avanzadas (radio, clustering)
-- Mage AI orquesta la ejecución automática cada 12 horas
-- El stack es 100% reproducible mediante Docker Compose
+### Mage AI
+
+- Orquesta el pipeline `earthquake_pipeline`.
+- Tiene un trigger configurado cada 12 horas.
+- Ejecuta dos bloques principales:
+  - `extract_and_load`
+  - `transform_and_load`
+
+### PostGIS
+
+- `raw_earthquakes`: tabla cruda con datos de USGS.
+- `earthquakes`: tabla final con columnas espaciales.
+- Indices GIST para consultas rapidas.
+- Funciones SQL para resumen y clusters.
+
+### FastAPI
+
+Endpoints principales:
+
+| Endpoint | Funcion |
+| -------- | ------- |
+| `/api/v1/health` | Healthcheck |
+| `/api/v1/earthquakes` | Lista de sismos con filtros |
+| `/api/v1/earthquakes/radius` | Busqueda radial con `ST_DWithin` |
+| `/api/v1/earthquakes/stats` | KPIs |
+| `/api/v1/earthquakes/clusters` | Clusters DBSCAN |
+
+### Streamlit
+
+- KPIs: total de eventos, magnitud promedio, magnitud maxima y tsunamis.
+- Mapa Folium con marcadores por magnitud.
+- Filtros por magnitud, dias y radio geografico.
+- Tabla de ultimos eventos.
+- Vista de clusters sismicos.
+
+---
+
+## Funcionalidades Espaciales
+
+| Funcionalidad | Tecnologia |
+| ------------- | ---------- |
+| Puntos geograficos | PostGIS `GEOGRAPHY(Point, 4326)` |
+| Indices espaciales | GIST |
+| Busqueda por radio | `ST_DWithin` |
+| Calculo de distancia | `ST_Distance` |
+| Clustering | `ST_ClusterDBSCAN` |
+| Visualizacion | Folium sobre Streamlit |
+
+---
+
+## Resultado Final
+
+- Pipeline reproducible con Docker Compose.
+- Mage AI funcionando para orquestacion.
+- Datos cargados en PostGIS.
+- API documentada con Swagger.
+- Dashboard interactivo listo para presentacion.
+- Puertos configurados para convivir con otros contenedores locales.
