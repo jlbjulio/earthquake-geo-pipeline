@@ -213,7 +213,7 @@ st.markdown(
         color: var(--ink) !important;
         font-family: "Segoe UI", Arial, sans-serif !important;
         font-size: 0.98rem !important;
-        font-weight: 650 !important;
+        font-weight: 400 !important;
         letter-spacing: 0 !important;
         line-height: 1.35 !important;
     }
@@ -258,7 +258,7 @@ st.markdown(
         color: var(--ink) !important;
         font-family: "Segoe UI", Arial, sans-serif !important;
         font-size: 1rem !important;
-        font-weight: 650 !important;
+        font-weight: 400 !important;
         letter-spacing: 0 !important;
         line-height: 1.35 !important;
         min-height: 2.45rem !important;
