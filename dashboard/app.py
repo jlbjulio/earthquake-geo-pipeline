@@ -1,4 +1,5 @@
 import os
+from math import pi, sqrt
 
 import folium
 import pandas as pd
@@ -6,17 +7,112 @@ import requests
 import streamlit as st
 from streamlit_folium import st_folium
 
+try:
+    from countryinfo import CountryInfo
+except ImportError:
+    CountryInfo = None
+
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8001").rstrip("/")
 API_PUBLIC_URL = os.getenv("API_PUBLIC_URL", API_BASE_URL).rstrip("/")
 
-LOCATION_PRESETS = {
-    "Panama": {"lat": 8.9824, "lon": -79.5199, "radius": 900},
-    "California": {"lat": 36.7783, "lon": -119.4179, "radius": 700},
-    "Japan": {"lat": 38.5, "lon": 142.0, "radius": 900},
-    "Chile": {"lat": -33.4489, "lon": -70.6693, "radius": 900},
-    "Mexico": {"lat": 19.4326, "lon": -99.1332, "radius": 900},
+EXTRA_LOCATION_PRESETS = {
     "Personalizado": {"lat": 8.9824, "lon": -79.5199, "radius": 500},
+    "Afganistan": {"lat": 33.9391, "lon": 67.7100, "radius": 900},
+    "Alaska": {"lat": 64.2008, "lon": -149.4937, "radius": 1000},
+    "Alemania": {"lat": 51.1657, "lon": 10.4515, "radius": 650},
+    "Argentina": {"lat": -38.4161, "lon": -63.6167, "radius": 1400},
+    "Australia": {"lat": -25.2744, "lon": 133.7751, "radius": 1800},
+    "Bolivia": {"lat": -16.2902, "lon": -63.5887, "radius": 900},
+    "Brasil": {"lat": -14.2350, "lon": -51.9253, "radius": 1800},
+    "California": {"lat": 36.7783, "lon": -119.4179, "radius": 700},
+    "Canada": {"lat": 56.1304, "lon": -106.3468, "radius": 1800},
+    "Chile": {"lat": -33.4489, "lon": -70.6693, "radius": 900},
+    "China": {"lat": 35.8617, "lon": 104.1954, "radius": 1800},
+    "Colombia": {"lat": 4.5709, "lon": -74.2973, "radius": 850},
+    "Costa Rica": {"lat": 9.7489, "lon": -83.7534, "radius": 500},
+    "Ecuador": {"lat": -1.8312, "lon": -78.1834, "radius": 650},
+    "El Salvador": {"lat": 13.7942, "lon": -88.8965, "radius": 450},
+    "Espana": {"lat": 40.4637, "lon": -3.7492, "radius": 750},
+    "Estados Unidos": {"lat": 39.8283, "lon": -98.5795, "radius": 2000},
+    "Filipinas": {"lat": 12.8797, "lon": 121.7740, "radius": 900},
+    "Francia": {"lat": 46.2276, "lon": 2.2137, "radius": 750},
+    "Grecia": {"lat": 39.0742, "lon": 21.8243, "radius": 650},
+    "Guatemala": {"lat": 15.7835, "lon": -90.2308, "radius": 550},
+    "Haiti": {"lat": 18.9712, "lon": -72.2852, "radius": 450},
+    "Honduras": {"lat": 15.2000, "lon": -86.2419, "radius": 550},
+    "India": {"lat": 20.5937, "lon": 78.9629, "radius": 1700},
+    "Indonesia": {"lat": -0.7893, "lon": 113.9213, "radius": 1700},
+    "Iran": {"lat": 32.4279, "lon": 53.6880, "radius": 1100},
+    "Italia": {"lat": 41.8719, "lon": 12.5674, "radius": 650},
+    "Jamaica": {"lat": 18.1096, "lon": -77.2975, "radius": 350},
+    "Japon": {"lat": 38.5000, "lon": 142.0000, "radius": 900},
+    "Mexico": {"lat": 19.4326, "lon": -99.1332, "radius": 900},
+    "Nepal": {"lat": 28.3949, "lon": 84.1240, "radius": 650},
+    "Nicaragua": {"lat": 12.8654, "lon": -85.2072, "radius": 500},
+    "Nueva Zelanda": {"lat": -40.9006, "lon": 174.8860, "radius": 850},
+    "Pakistan": {"lat": 30.3753, "lon": 69.3451, "radius": 1000},
+    "Panama": {"lat": 8.9824, "lon": -79.5199, "radius": 600},
+    "Papua Nueva Guinea": {"lat": -6.3150, "lon": 143.9555, "radius": 900},
+    "Peru": {"lat": -9.1900, "lon": -75.0152, "radius": 950},
+    "Puerto Rico": {"lat": 18.2208, "lon": -66.5901, "radius": 350},
+    "Republica Dominicana": {"lat": 18.7357, "lon": -70.1627, "radius": 350},
+    "Rusia": {"lat": 61.5240, "lon": 105.3188, "radius": 2200},
+    "Taiwan": {"lat": 23.6978, "lon": 120.9605, "radius": 450},
+    "Turquia": {"lat": 38.9637, "lon": 35.2433, "radius": 900},
+    "Venezuela": {"lat": 6.4238, "lon": -66.5897, "radius": 900},
 }
+
+MAP_STYLES = {
+    "Claro detallado": {
+        "tiles": "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+        "attr": "&copy; OpenStreetMap contributors &copy; CARTO",
+    },
+    "Claro simple": {
+        "tiles": "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
+        "attr": "&copy; OpenStreetMap contributors &copy; CARTO",
+    },
+    "OpenStreetMap": {
+        "tiles": "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
+        "attr": "&copy; OpenStreetMap contributors",
+    },
+}
+
+
+def estimate_country_radius(area):
+    try:
+        area = float(area or 0)
+    except (TypeError, ValueError):
+        area = 0
+    if area <= 0:
+        return 700
+    return int(max(250, min(2500, sqrt(area / pi) * 1.35)))
+
+
+def build_location_presets():
+    presets = dict(EXTRA_LOCATION_PRESETS)
+    if CountryInfo is not None:
+        try:
+            for name, info in CountryInfo.all().items():
+                latlng = info.get("latlng") or []
+                if len(latlng) >= 2 and name not in presets:
+                    presets[name] = {
+                        "lat": float(latlng[0]),
+                        "lon": float(latlng[1]),
+                        "radius": estimate_country_radius(info.get("area")),
+                    }
+        except Exception:
+            pass
+
+    first = {"Personalizado": presets["Personalizado"]}
+    rest = {
+        name: presets[name]
+        for name in sorted(presets)
+        if name != "Personalizado"
+    }
+    return {**first, **rest}
+
+
+LOCATION_PRESETS = build_location_presets()
 
 MAG_COLORS = {
     "low": "#2f855a",
@@ -126,6 +222,18 @@ st.markdown(
         border: 1px solid var(--line) !important;
         border-radius: 8px !important;
         box-shadow: 0 8px 24px rgba(36, 21, 15, 0.22) !important;
+    }
+    div[data-baseweb="popover"] ul,
+    div[data-baseweb="popover"] li,
+    div[data-baseweb="popover"] [role="listbox"],
+    div[data-baseweb="popover"] [role="option"] {
+        background: #fffaf7 !important;
+        color: var(--ink) !important;
+    }
+    div[data-baseweb="popover"] [role="option"]:hover,
+    div[data-baseweb="popover"] [aria-selected="true"] {
+        background: #f0d9c7 !important;
+        color: var(--ink) !important;
     }
     div[data-baseweb="popover"] *,
     div[data-baseweb="tooltip"] *,
@@ -332,7 +440,7 @@ def safe_fetch(endpoint: str, params: dict | None = None) -> tuple[dict, str | N
         return {"count": 0, "results": []}, str(err)
 
 
-def build_map(rows, use_radius, lat, lon, dist_km, map_tiles):
+def build_map(rows, use_radius, lat, lon, dist_km, map_style):
     if rows:
         avg_lat = sum(float(r["latitude"]) for r in rows) / len(rows)
         avg_lon = sum(float(r["longitude"]) for r in rows) / len(rows)
@@ -342,7 +450,20 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_tiles):
         location = [lat, lon]
         zoom_start = 4
 
-    fmap = folium.Map(location=location, zoom_start=zoom_start, tiles=map_tiles)
+    fmap = folium.Map(
+        location=location,
+        zoom_start=zoom_start,
+        tiles=None,
+        control_scale=True,
+        prefer_canvas=True,
+    )
+    style = MAP_STYLES.get(map_style, MAP_STYLES["Claro detallado"])
+    folium.TileLayer(
+        tiles=style["tiles"],
+        attr=style["attr"],
+        name=map_style,
+        detect_retina=True,
+    ).add_to(fmap)
 
     for eq in rows:
         mag = float(eq.get("mag") or 0)
@@ -413,13 +534,13 @@ with st.sidebar:
     )
     st.caption("Cuantos dias recientes quieres consultar.")
     limit = st.slider(
-        "Puntos a mostrar",
+        "Cantidad maxima en pantalla",
         50,
         1000,
         500,
         step=50,
     )
-    st.caption("Limita cuantos eventos se dibujan en el mapa para que cargue rapido.")
+    st.caption("Solo limita cuantos sismos se dibujan en el mapa y la tabla. La base puede tener muchos mas.")
 
     lat = LOCATION_PRESETS["Panama"]["lat"]
     lon = LOCATION_PRESETS["Panama"]["lon"]
@@ -428,7 +549,11 @@ with st.sidebar:
     st.divider()
     if use_radius:
         st.subheader("Buscar cerca de")
-        preset = st.selectbox("Lugar de referencia", list(LOCATION_PRESETS.keys()))
+        preset = st.selectbox(
+            "Pais o zona",
+            list(LOCATION_PRESETS.keys()),
+            help="Puedes escribir dentro del selector para encontrar rapido un pais.",
+        )
         preset_data = LOCATION_PRESETS[preset]
 
         if preset == "Personalizado":
@@ -439,14 +564,14 @@ with st.sidebar:
             lat = preset_data["lat"]
             lon = preset_data["lon"]
             dist_km = st.slider("Distancia alrededor", 10, 2000, preset_data["radius"], step=10)
-        st.caption("Muestra sismos dentro de esa distancia desde el lugar elegido.")
+        st.caption("Escribe en el selector para buscar un pais. Si no aparece, usa Personalizado y coloca coordenadas.")
     else:
         st.caption("Eventos recientes muestra sismos globales. Usa Cerca de una zona para buscar por ubicacion.")
 
     st.divider()
     map_style = st.selectbox(
         "Tipo de mapa",
-        ["CartoDB positron", "OpenStreetMap"],
+        list(MAP_STYLES.keys()),
     )
 
     refresh = st.button("Actualizar datos", width="stretch", type="primary")
@@ -456,9 +581,9 @@ with st.sidebar:
     st.caption("Fuente: USGS Earthquake Catalog")
     with st.expander("Guia rapida"):
         st.write("1. Usa Eventos recientes para ver sismos globales.")
-        st.write("2. Usa Cerca de una zona para buscar alrededor de un pais o ciudad.")
+        st.write("2. Usa Cerca de una zona para buscar alrededor de un pais o escribir sus coordenadas.")
         st.write("3. Ajusta la magnitud para ocultar eventos muy pequenos.")
-        st.write("4. Puntos a mostrar solo controla cuantos aparecen en pantalla.")
+        st.write("4. Cantidad maxima en pantalla no borra datos; solo hace mas rapido el mapa.")
         st.write("5. El mapa, la tabla y el resumen usan los mismos filtros.")
 
 st.markdown(

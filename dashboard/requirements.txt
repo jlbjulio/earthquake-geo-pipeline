@@ -3,3 +3,4 @@ folium>=0.16.0
 streamlit-folium>=0.19.1
 requests>=2.31.0
 pandas>=2.2.0
+countryinfo>=1.0.1
