@@ -106,7 +106,7 @@ Endpoints principales:
 
 ### Streamlit
 
-- KPIs: total de eventos, magnitud promedio, magnitud maxima y tsunamis.
+- KPIs: total de eventos, eventos visibles, magnitud maxima y profundidad promedio.
 - Mapa Folium con marcadores por magnitud.
 - Filtros por magnitud, dias y radio geografico.
 - Tabla de ultimos eventos.

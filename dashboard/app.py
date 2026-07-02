@@ -116,6 +116,23 @@ st.markdown(
     section[data-testid="stSidebar"] [role="radiogroup"] label * {
         color: var(--sidebar-text) !important;
     }
+    section[data-testid="stSidebar"] [data-testid="stTooltipHoverTarget"] *,
+    section[data-testid="stSidebar"] [data-testid="stTooltipHoverTarget"] {
+        color: var(--sidebar-text) !important;
+    }
+    div[data-baseweb="popover"],
+    div[data-baseweb="tooltip"] {
+        background: #fff8f0 !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 8px 24px rgba(36, 21, 15, 0.22) !important;
+    }
+    div[data-baseweb="popover"] *,
+    div[data-baseweb="tooltip"] *,
+    [role="tooltip"],
+    [role="tooltip"] * {
+        color: var(--ink) !important;
+    }
     div[data-testid="stMetric"] {
         background: var(--panel);
         border: 1px solid var(--line);
@@ -285,6 +302,17 @@ def magnitude_label(mag):
     return "Severo"
 
 
+def average_depth(rows):
+    depths = [
+        float(row["depth"])
+        for row in rows
+        if row.get("depth") is not None and pd.notna(row.get("depth"))
+    ]
+    if not depths:
+        return None
+    return sum(depths) / len(depths)
+
+
 @st.cache_data(ttl=10, show_spinner=False)
 def fetch_data(endpoint: str, params: tuple = ()) -> dict:
     query = dict(params)
@@ -320,7 +348,6 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_tiles):
         mag = float(eq.get("mag") or 0)
         color = magnitude_color(mag)
         radius = max(4, min(6 + mag * 2.2, 24))
-        tsunami_text = "Si" if eq.get("tsunami") else "No"
         detail_url = f"{API_PUBLIC_URL}/api/v1/earthquakes/{eq['usgs_id']}"
         popup_html = (
             f"<b>{eq.get('place', 'Unknown')}</b><br>"
@@ -328,7 +355,6 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_tiles):
             f"Categoria: {magnitude_label(mag)}<br>"
             f"Profundidad: {eq.get('depth', 'N/A')} km<br>"
             f"Hora: {format_time(eq.get('time'))}<br>"
-            f"Tsunami: {tsunami_text}<br>"
             f"<a href='{detail_url}' target='_blank'>Ver detalle API</a>"
         )
 
@@ -384,16 +410,16 @@ with st.sidebar:
         1,
         30,
         7,
-        help="Cuantos dias recientes quieres consultar.",
     )
+    st.caption("Cuantos dias recientes quieres consultar.")
     limit = st.slider(
         "Puntos a mostrar",
         50,
         1000,
         500,
         step=50,
-        help="Limita cuantos eventos se dibujan en el mapa para que cargue rapido.",
     )
+    st.caption("Limita cuantos eventos se dibujan en el mapa para que cargue rapido.")
 
     lat = LOCATION_PRESETS["Panama"]["lat"]
     lon = LOCATION_PRESETS["Panama"]["lon"]
@@ -439,7 +465,7 @@ st.markdown(
     """
     <div class="hero">
         <h1>Monitor Sismico Global</h1>
-        <p>Explora sismos recientes, busca por zona y detecta concentraciones de actividad sismica.</p>
+        <p>Explora terremotos recientes, filtra por magnitud y busca actividad sismica cerca de una zona.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -465,12 +491,6 @@ st.markdown(
 if health_error:
     st.error(f"No se pudo conectar con el backend: {health_error}")
 
-metric_cols = st.columns(4)
-metric_cols[0].metric("Eventos en base", format_number(stats.get("total_events")))
-metric_cols[1].metric("Magnitud prom.", format_number(stats.get("avg_magnitude")))
-metric_cols[2].metric("Magnitud max.", format_number(stats.get("max_magnitude")))
-metric_cols[3].metric("Tsunamis", format_number(stats.get("total_tsunami")))
-
 query_params = {
     "min_mag": min_mag,
     "limit": limit,
@@ -490,16 +510,15 @@ rows = [
 if data_error:
     st.warning(f"No se pudieron cargar eventos: {data_error}")
 
-st.markdown(
-    f"""
-    <div class="legend">
-        <span><i class="dot" style="background:{MAG_COLORS['low']}"></i>Micro &lt; 2</span>
-        <span><i class="dot" style="background:{MAG_COLORS['mid']}"></i>Leve 2-4</span>
-        <span><i class="dot" style="background:{MAG_COLORS['high']}"></i>Fuerte 4-6</span>
-        <span><i class="dot" style="background:{MAG_COLORS['severe']}"></i>Severo 6+</span>
-    </div>
-    """,
-    unsafe_allow_html=True,
+avg_depth = average_depth(rows)
+
+metric_cols = st.columns(4)
+metric_cols[0].metric("Eventos en base", format_number(stats.get("total_events")))
+metric_cols[1].metric("Eventos visibles", format_number(len(rows)))
+metric_cols[2].metric("Magnitud max.", format_number(stats.get("max_magnitude")))
+metric_cols[3].metric(
+    "Profundidad prom.",
+    f"{format_number(avg_depth)} km" if avg_depth is not None else "--",
 )
 
 tab_map, tab_table, tab_summary = st.tabs(
@@ -507,6 +526,17 @@ tab_map, tab_table, tab_summary = st.tabs(
 )
 
 with tab_map:
+    st.markdown(
+        f"""
+        <div class="legend">
+            <span><i class="dot" style="background:{MAG_COLORS['low']}"></i>Micro &lt; 2</span>
+            <span><i class="dot" style="background:{MAG_COLORS['mid']}"></i>Leve 2-4</span>
+            <span><i class="dot" style="background:{MAG_COLORS['high']}"></i>Fuerte 4-6</span>
+            <span><i class="dot" style="background:{MAG_COLORS['severe']}"></i>Severo 6+</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
     left, right = st.columns([3, 1])
     with left:
         fmap = build_map(rows, use_radius, lat, lon, dist_km, map_style)
@@ -528,6 +558,7 @@ with tab_map:
             st.subheader("Evento mayor")
             st.write(strongest.get("place", "Unknown"))
             st.metric("Magnitud", format_number(strongest.get("mag")))
+            st.metric("Profundidad", f"{format_number(strongest.get('depth'))} km")
             st.caption(format_time(strongest.get("time")))
 
 with tab_table:
@@ -536,7 +567,6 @@ with tab_table:
         df["time"] = pd.to_datetime(df["time"], errors="coerce", utc=True)
         df["Hora UTC"] = df["time"].dt.strftime("%Y-%m-%d %H:%M")
         df["Categoria"] = df["mag"].apply(magnitude_label)
-        df["Tsunami"] = df["tsunami"].apply(lambda value: "Si" if value else "No")
         if "distance_km" in df.columns:
             df["Distancia km"] = df["distance_km"]
 
@@ -560,7 +590,6 @@ with tab_table:
             "Latitud",
             "Longitud",
             "Tipo",
-            "Tsunami",
             "Alerta",
             "Estado",
             "Distancia km",
