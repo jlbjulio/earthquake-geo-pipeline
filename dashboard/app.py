@@ -165,7 +165,7 @@ st.markdown(
     }
     [data-testid="stAppViewContainer"],
     [data-testid="stMain"] {
-        background: var(--app-bg);
+        background: var(--main-bg);
     }
     .block-container {
         background: var(--main-bg);
@@ -176,6 +176,25 @@ st.markdown(
         padding: 1.25rem 1.45rem 2rem 1.45rem;
         max-width: 1440px;
         box-shadow: 0 18px 45px rgba(0, 0, 0, 0.22);
+    }
+    [data-testid="stMain"] *,
+    .block-container *,
+    [data-testid="stMetric"] *,
+    div[data-testid="stDataFrame"] *,
+    div[data-testid="stTable"] * {
+        color: var(--ink);
+    }
+    [data-testid="stMain"] [data-testid="stCaptionContainer"],
+    [data-testid="stMain"] [data-testid="stCaptionContainer"] *,
+    .block-container [data-testid="stCaptionContainer"],
+    .block-container [data-testid="stCaptionContainer"] * {
+        color: var(--muted) !important;
+    }
+    [data-testid="stMain"] .stAlert,
+    [data-testid="stMain"] .stAlert *,
+    .block-container .stAlert,
+    .block-container .stAlert * {
+        color: var(--ink) !important;
     }
     section[data-testid="stSidebar"] {
         background: var(--sidebar);
@@ -276,6 +295,24 @@ st.markdown(
     div[data-baseweb="tooltip"] *,
     [role="tooltip"],
     [role="tooltip"] * {
+        color: var(--ink) !important;
+    }
+    [data-testid="stMain"] div[data-baseweb="select"] > div,
+    [data-testid="stMain"] div[data-baseweb="input"] > div,
+    [data-testid="stMain"] div[data-baseweb="base-input"],
+    .block-container div[data-baseweb="select"] > div,
+    .block-container div[data-baseweb="input"] > div,
+    .block-container div[data-baseweb="base-input"] {
+        background: #fffaf7 !important;
+        border-color: var(--line) !important;
+        color: var(--ink) !important;
+    }
+    [data-testid="stMain"] input,
+    [data-testid="stMain"] textarea,
+    [data-testid="stMain"] div[data-baseweb="select"] *,
+    .block-container input,
+    .block-container textarea,
+    .block-container div[data-baseweb="select"] * {
         color: var(--ink) !important;
     }
     div[data-testid="stMetric"] {
@@ -578,19 +615,33 @@ def insight_text(counts, total):
 
 
 def chart_base(chart):
-    return chart.configure_view(
+    return chart.properties(
+        background="#fff8f0",
+    ).configure_view(
         strokeWidth=0,
+        fill="#fff8f0",
     ).configure_axis(
         labelColor="#24150f",
         titleColor="#6d5548",
         gridColor="#ead6c9",
+        domainColor="#b9907d",
+        tickColor="#b9907d",
         labelFont="Segoe UI",
         titleFont="Segoe UI",
+        labelFontSize=12,
+        titleFontSize=12,
     ).configure_legend(
         labelColor="#24150f",
         titleColor="#6d5548",
         labelFont="Segoe UI",
         titleFont="Segoe UI",
+        labelFontSize=12,
+        titleFontSize=12,
+    ).configure_title(
+        color="#4b2419",
+        font="Segoe UI",
+        fontSize=15,
+        anchor="start",
     )
 
 
@@ -972,6 +1023,15 @@ with tab_summary:
             unsafe_allow_html=True,
         )
 
+        depth_df = df_plot.dropna(subset=["depth", "mag"]).copy()
+        region_df = (
+            df_plot["Region"]
+            .value_counts()
+            .head(8)
+            .reset_index()
+        )
+        region_df.columns = ["Region", "Eventos"]
+
         left_chart, right_chart = st.columns([1.05, 1])
         with left_chart:
             dist_df = counts.reset_index()
@@ -988,64 +1048,11 @@ with tab_summary:
                     legend=None,
                 ),
                 tooltip=["Categoria", "Eventos"],
-            ).properties(height=230)
-            st.altair_chart(chart_base(dist_chart), use_container_width=True)
-
-        with right_chart:
-            timeline_df = (
-                df_plot.dropna(subset=["Dia"])
-                .groupby("Dia", as_index=False)
-                .size()
-                .rename(columns={"size": "Eventos"})
+            ).properties(
+                height=240,
+                title="Distribucion por magnitud",
             )
-            if len(timeline_df) > 1:
-                timeline_chart = alt.Chart(timeline_df).mark_area(
-                    line={"color": "#7a3f2a"},
-                    color="#d9b69f",
-                    opacity=0.85,
-                ).encode(
-                    x=alt.X("Dia:T", title="Fecha UTC"),
-                    y=alt.Y("Eventos:Q", title="Eventos"),
-                    tooltip=["Dia", "Eventos"],
-                ).properties(height=230)
-                st.altair_chart(chart_base(timeline_chart), use_container_width=True)
-            else:
-                st.info("La muestra visible no tiene suficientes dias para graficar tendencia.")
-
-        depth_df = df_plot.dropna(subset=["depth", "mag"]).copy()
-        region_df = (
-            df_plot["Region"]
-            .value_counts()
-            .head(8)
-            .reset_index()
-        )
-        region_df.columns = ["Region", "Eventos"]
-
-        left_chart, right_chart = st.columns([1, 1])
-        with left_chart:
-            if not depth_df.empty:
-                scatter_chart = alt.Chart(depth_df.head(500)).mark_circle(
-                    size=70,
-                    opacity=0.72,
-                    stroke="#fff8f0",
-                    strokeWidth=0.5,
-                ).encode(
-                    x=alt.X("mag:Q", title="Magnitud"),
-                    y=alt.Y("depth:Q", title="Profundidad km"),
-                    color=alt.Color(
-                        "Categoria:N",
-                        scale=alt.Scale(domain=labels, range=color_range),
-                        title="Categoria",
-                    ),
-                    tooltip=[
-                        alt.Tooltip("place:N", title="Lugar"),
-                        alt.Tooltip("mag:Q", title="Magnitud", format=".2f"),
-                        alt.Tooltip("depth:Q", title="Profundidad km", format=".1f"),
-                    ],
-                ).properties(height=280)
-                st.altair_chart(chart_base(scatter_chart), use_container_width=True)
-            else:
-                st.info("No hay profundidad suficiente para comparar magnitud y profundidad.")
+            st.altair_chart(chart_base(dist_chart), use_container_width=True, theme=None)
 
         with right_chart:
             region_chart = alt.Chart(region_df).mark_bar(
@@ -1055,8 +1062,38 @@ with tab_summary:
                 x=alt.X("Eventos:Q", title="Eventos"),
                 y=alt.Y("Region:N", sort="-x", title=None),
                 tooltip=["Region", "Eventos"],
-            ).properties(height=280)
-            st.altair_chart(chart_base(region_chart), use_container_width=True)
+            ).properties(
+                height=240,
+                title="Zonas mas frecuentes",
+            )
+            st.altair_chart(chart_base(region_chart), use_container_width=True, theme=None)
+
+        if not depth_df.empty:
+            scatter_chart = alt.Chart(depth_df.head(500)).mark_circle(
+                size=70,
+                opacity=0.72,
+                stroke="#fff8f0",
+                strokeWidth=0.5,
+            ).encode(
+                x=alt.X("mag:Q", title="Magnitud"),
+                y=alt.Y("depth:Q", title="Profundidad km"),
+                color=alt.Color(
+                    "Categoria:N",
+                    scale=alt.Scale(domain=labels, range=color_range),
+                    title="Categoria",
+                ),
+                tooltip=[
+                    alt.Tooltip("place:N", title="Lugar"),
+                    alt.Tooltip("mag:Q", title="Magnitud", format=".2f"),
+                    alt.Tooltip("depth:Q", title="Profundidad km", format=".1f"),
+                ],
+            ).properties(
+                height=310,
+                title="Magnitud vs profundidad",
+            )
+            st.altair_chart(chart_base(scatter_chart), use_container_width=True, theme=None)
+        else:
+            st.info("No hay profundidad suficiente para comparar magnitud y profundidad.")
 
         st.markdown(
             """
