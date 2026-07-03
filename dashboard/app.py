@@ -167,6 +167,43 @@ st.markdown(
     [data-testid="stMain"] {
         background: var(--main-bg);
     }
+    header[data-testid="stHeader"],
+    [data-testid="stHeader"] {
+        background: var(--main-bg) !important;
+        color: var(--ink) !important;
+        border-bottom: 1px solid var(--line) !important;
+        box-shadow: 0 1px 2px rgba(36, 21, 15, 0.08) !important;
+    }
+    [data-testid="stDecoration"] {
+        background: var(--primary) !important;
+        height: 0.18rem !important;
+    }
+    [data-testid="stToolbar"],
+    [data-testid="stToolbar"] *,
+    [data-testid="stStatusWidget"],
+    [data-testid="stStatusWidget"] *,
+    [data-testid="stDeployButton"],
+    [data-testid="stDeployButton"] *,
+    [data-testid="stMainMenu"],
+    [data-testid="stMainMenu"] * {
+        color: var(--ink) !important;
+        fill: var(--ink) !important;
+        stroke: var(--ink) !important;
+    }
+    [data-testid="stToolbar"] button,
+    [data-testid="stToolbar"] a,
+    [data-testid="stDeployButton"] button,
+    [data-testid="stMainMenu"] button {
+        background: #fff8f0 !important;
+        color: var(--ink) !important;
+        border-color: var(--line) !important;
+    }
+    [data-testid="stToolbar"] button:hover,
+    [data-testid="stDeployButton"] button:hover,
+    [data-testid="stMainMenu"] button:hover {
+        background: #f0d9c7 !important;
+        color: var(--ink) !important;
+    }
     .block-container {
         background: var(--main-bg);
         border: 1px solid #6b4539;
@@ -511,6 +548,51 @@ st.markdown(
     iframe {
         background: #ffffff;
         border-radius: 8px;
+    }
+    .table-wrap {
+        max-height: 620px;
+        overflow: auto;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff8f0;
+        box-shadow: 0 1px 3px rgba(36, 21, 15, 0.08);
+    }
+    .events-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        background: #fff8f0;
+        color: var(--ink);
+        font-size: 0.9rem;
+    }
+    .events-table thead th {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: #7a3f2a;
+        color: #fff8f2;
+        border-bottom: 1px solid #5f2f20;
+        padding: 0.68rem 0.75rem;
+        text-align: left;
+        white-space: nowrap;
+        font-weight: 600;
+    }
+    .events-table tbody td {
+        background: #fffaf7;
+        color: var(--ink);
+        border-bottom: 1px solid #ead6c9;
+        padding: 0.58rem 0.75rem;
+        vertical-align: top;
+    }
+    .events-table tbody tr:nth-child(even) td {
+        background: #f7eadf;
+    }
+    .events-table tbody tr:hover td {
+        background: #f0d9c7;
+    }
+    .events-table td:first-child,
+    .events-table th:first-child {
+        border-left: 0;
     }
     </style>
     """,
@@ -944,7 +1026,20 @@ with tab_table:
             "Distancia km",
         ]
         columns = [column for column in columns if column in df.columns]
-        st.dataframe(df[columns], width="stretch", hide_index=True)
+        table_df = df[columns].copy()
+        for column in ["Magnitud", "Profundidad km", "Latitud", "Longitud", "Distancia km"]:
+            if column in table_df.columns:
+                table_df[column] = pd.to_numeric(table_df[column], errors="coerce").round(2)
+        table_html = table_df.to_html(
+            index=False,
+            escape=True,
+            classes="events-table",
+            border=0,
+        )
+        st.markdown(
+            f"<div class='table-wrap'>{table_html}</div>",
+            unsafe_allow_html=True,
+        )
     else:
         st.info("No hay eventos con los filtros actuales.")
 
