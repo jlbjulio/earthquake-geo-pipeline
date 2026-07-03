@@ -1,6 +1,8 @@
 import os
+from html import escape
 from math import pi, sqrt
 
+import altair as alt
 import folium
 import pandas as pd
 import requests
@@ -360,6 +362,83 @@ st.markdown(
         margin-right: 0.35rem;
         vertical-align: -0.05rem;
     }
+    .analysis-title {
+        margin: 0.3rem 0 0.85rem 0;
+    }
+    .analysis-title h2 {
+        margin: 0;
+        color: var(--primary-dark);
+        font-size: 1.35rem;
+    }
+    .analysis-title p {
+        margin: 0.25rem 0 0 0;
+        color: var(--muted);
+    }
+    .analysis-card {
+        background: #fff8f0;
+        border: 1px solid var(--line);
+        border-left: 5px solid var(--primary);
+        border-radius: 8px;
+        padding: 0.9rem 1rem;
+        min-height: 7rem;
+        box-shadow: 0 1px 3px rgba(36, 21, 15, 0.06);
+    }
+    .analysis-card .label {
+        color: var(--muted);
+        font-size: 0.82rem;
+        margin-bottom: 0.25rem;
+    }
+    .analysis-card .value {
+        color: var(--ink);
+        font-size: 1.32rem;
+        line-height: 1.2;
+        margin-bottom: 0.4rem;
+    }
+    .analysis-card .note {
+        color: var(--muted);
+        font-size: 0.9rem;
+        line-height: 1.35;
+    }
+    .section-band {
+        background: #fff8f0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.95rem 1rem;
+        margin: 0.75rem 0 1rem 0;
+    }
+    .section-band h3 {
+        margin: 0 0 0.25rem 0;
+        color: var(--primary-dark);
+        font-size: 1.05rem;
+    }
+    .section-band p {
+        margin: 0;
+        color: var(--muted);
+    }
+    .event-row {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        background: #fff8f0;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 0.75rem 0.85rem;
+        margin-bottom: 0.55rem;
+    }
+    .event-row .place {
+        color: var(--ink);
+        font-size: 0.95rem;
+    }
+    .event-row .meta {
+        color: var(--muted);
+        font-size: 0.84rem;
+        margin-top: 0.25rem;
+    }
+    .event-row .mag {
+        color: var(--primary-dark);
+        font-size: 1.15rem;
+        white-space: nowrap;
+    }
     button[kind="primary"] {
         background: var(--primary) !important;
         border-color: var(--primary) !important;
@@ -415,7 +494,7 @@ def format_number(value, fallback="--"):
 
 
 def format_time(value):
-    if not value:
+    if value is None or value == "":
         return "--"
     parsed = pd.to_datetime(value, errors="coerce", utc=True)
     if pd.isna(parsed):
@@ -454,6 +533,65 @@ def average_depth(rows):
     if not depths:
         return None
     return sum(depths) / len(depths)
+
+
+def region_from_place(place):
+    if not place:
+        return "Sin ubicacion"
+    text = str(place).strip()
+    if "," in text:
+        return text.split(",")[-1].strip() or text
+    if " of " in text:
+        return text.split(" of ")[-1].strip() or text
+    return text
+
+
+def prepare_analysis_frame(rows):
+    df = pd.DataFrame(rows).copy()
+    df["mag"] = pd.to_numeric(df["mag"], errors="coerce")
+    df["depth"] = pd.to_numeric(df["depth"], errors="coerce")
+    df["time"] = pd.to_datetime(df["time"], errors="coerce", utc=True)
+    df = df.dropna(subset=["mag"])
+    bins = [-10, 2, 4, 6, 10]
+    labels = ["Micro", "Leve", "Fuerte", "Severo"]
+    df["Categoria"] = pd.cut(
+        df["mag"],
+        bins=bins,
+        labels=labels,
+        include_lowest=True,
+    ).astype(str)
+    df["Region"] = df["place"].fillna("Sin ubicacion").apply(region_from_place)
+    df["Dia"] = df["time"].dt.strftime("%Y-%m-%d")
+    return df
+
+
+def insight_text(counts, total):
+    if total <= 0:
+        return "Sin datos suficientes"
+    severe = int(counts.get("Severo", 0))
+    strong = int(counts.get("Fuerte", 0))
+    if severe:
+        return "Hay eventos severos visibles; conviene revisar detalle y ubicacion."
+    if strong:
+        return "Predominan eventos no severos, pero existen sismos fuertes relevantes."
+    return "La actividad visible se concentra en magnitudes micro o leves."
+
+
+def chart_base(chart):
+    return chart.configure_view(
+        strokeWidth=0,
+    ).configure_axis(
+        labelColor="#24150f",
+        titleColor="#6d5548",
+        gridColor="#ead6c9",
+        labelFont="Segoe UI",
+        titleFont="Segoe UI",
+    ).configure_legend(
+        labelColor="#24150f",
+        titleColor="#6d5548",
+        labelFont="Segoe UI",
+        titleFont="Segoe UI",
+    )
 
 
 @st.cache_data(ttl=10, show_spinner=False)
@@ -761,22 +899,191 @@ with tab_table:
 
 with tab_summary:
     if rows:
-        df_plot = pd.DataFrame(rows)
-        bins = [0, 2, 4, 6, 10]
+        df_plot = prepare_analysis_frame(rows)
         labels = ["Micro", "Leve", "Fuerte", "Severo"]
-        df_plot["Categoria"] = pd.cut(
-            df_plot["mag"].astype(float),
-            bins=bins,
-            labels=labels,
-            include_lowest=True,
+        color_range = [
+            MAG_COLORS["low"],
+            MAG_COLORS["mid"],
+            MAG_COLORS["high"],
+            MAG_COLORS["severe"],
+        ]
+        counts = df_plot["Categoria"].value_counts().reindex(labels, fill_value=0)
+        total_visible = int(counts.sum())
+        dominant_category = counts.idxmax() if total_visible else "--"
+        strongest = df_plot.sort_values("mag", ascending=False).iloc[0]
+        active_region = (
+            df_plot["Region"].value_counts().index[0]
+            if not df_plot["Region"].empty
+            else "--"
         )
-        dist = df_plot["Categoria"].value_counts().reindex(labels, fill_value=0)
-        st.subheader("Distribucion por magnitud")
-        st.bar_chart(dist)
 
-        top_places = df_plot["place"].fillna("Unknown").head(10)
-        st.subheader("Eventos recientes")
-        for index, place in enumerate(top_places, start=1):
-            st.write(f"{index}. {place}")
+        st.markdown(
+            """
+            <div class="analysis-title">
+                <h2>Analisis de actividad sismica</h2>
+                <p>Resumen interpretativo de los eventos visibles con los filtros actuales.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        card_cols = st.columns(4)
+        cards = [
+            (
+                "Lectura rapida",
+                insight_text(counts, total_visible),
+                f"{total_visible:,} eventos analizados",
+            ),
+            (
+                "Categoria dominante",
+                dominant_category,
+                f"{int(counts.get(dominant_category, 0)):,} eventos en esta categoria",
+            ),
+            (
+                "Evento mayor",
+                f"M {format_number(strongest.get('mag'))}",
+                escape(str(strongest.get("place", "Sin ubicacion"))),
+            ),
+            (
+                "Zona mas repetida",
+                escape(str(active_region)),
+                "Aparece con mayor frecuencia en la muestra visible",
+            ),
+        ]
+        for column, (label, value, note) in zip(card_cols, cards):
+            column.markdown(
+                f"""
+                <div class="analysis-card">
+                    <div class="label">{label}</div>
+                    <div class="value">{value}</div>
+                    <div class="note">{note}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+        st.markdown(
+            """
+            <div class="section-band">
+                <h3>Comportamiento general</h3>
+                <p>Estas graficas muestran cantidad, intensidad y profundidad para explicar mejor el patron de sismos.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+
+        left_chart, right_chart = st.columns([1.05, 1])
+        with left_chart:
+            dist_df = counts.reset_index()
+            dist_df.columns = ["Categoria", "Eventos"]
+            dist_chart = alt.Chart(dist_df).mark_bar(
+                cornerRadiusEnd=5,
+                size=26,
+            ).encode(
+                x=alt.X("Eventos:Q", title="Eventos"),
+                y=alt.Y("Categoria:N", sort=labels, title=None),
+                color=alt.Color(
+                    "Categoria:N",
+                    scale=alt.Scale(domain=labels, range=color_range),
+                    legend=None,
+                ),
+                tooltip=["Categoria", "Eventos"],
+            ).properties(height=230)
+            st.altair_chart(chart_base(dist_chart), use_container_width=True)
+
+        with right_chart:
+            timeline_df = (
+                df_plot.dropna(subset=["Dia"])
+                .groupby("Dia", as_index=False)
+                .size()
+                .rename(columns={"size": "Eventos"})
+            )
+            if len(timeline_df) > 1:
+                timeline_chart = alt.Chart(timeline_df).mark_area(
+                    line={"color": "#7a3f2a"},
+                    color="#d9b69f",
+                    opacity=0.85,
+                ).encode(
+                    x=alt.X("Dia:T", title="Fecha UTC"),
+                    y=alt.Y("Eventos:Q", title="Eventos"),
+                    tooltip=["Dia", "Eventos"],
+                ).properties(height=230)
+                st.altair_chart(chart_base(timeline_chart), use_container_width=True)
+            else:
+                st.info("La muestra visible no tiene suficientes dias para graficar tendencia.")
+
+        depth_df = df_plot.dropna(subset=["depth", "mag"]).copy()
+        region_df = (
+            df_plot["Region"]
+            .value_counts()
+            .head(8)
+            .reset_index()
+        )
+        region_df.columns = ["Region", "Eventos"]
+
+        left_chart, right_chart = st.columns([1, 1])
+        with left_chart:
+            if not depth_df.empty:
+                scatter_chart = alt.Chart(depth_df.head(500)).mark_circle(
+                    size=70,
+                    opacity=0.72,
+                    stroke="#fff8f0",
+                    strokeWidth=0.5,
+                ).encode(
+                    x=alt.X("mag:Q", title="Magnitud"),
+                    y=alt.Y("depth:Q", title="Profundidad km"),
+                    color=alt.Color(
+                        "Categoria:N",
+                        scale=alt.Scale(domain=labels, range=color_range),
+                        title="Categoria",
+                    ),
+                    tooltip=[
+                        alt.Tooltip("place:N", title="Lugar"),
+                        alt.Tooltip("mag:Q", title="Magnitud", format=".2f"),
+                        alt.Tooltip("depth:Q", title="Profundidad km", format=".1f"),
+                    ],
+                ).properties(height=280)
+                st.altair_chart(chart_base(scatter_chart), use_container_width=True)
+            else:
+                st.info("No hay profundidad suficiente para comparar magnitud y profundidad.")
+
+        with right_chart:
+            region_chart = alt.Chart(region_df).mark_bar(
+                cornerRadiusEnd=5,
+                color="#7a3f2a",
+            ).encode(
+                x=alt.X("Eventos:Q", title="Eventos"),
+                y=alt.Y("Region:N", sort="-x", title=None),
+                tooltip=["Region", "Eventos"],
+            ).properties(height=280)
+            st.altair_chart(chart_base(region_chart), use_container_width=True)
+
+        st.markdown(
+            """
+            <div class="section-band">
+                <h3>Eventos destacados</h3>
+                <p>Los sismos con mayor magnitud dentro de la muestra visible.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        strongest_events = df_plot.sort_values("mag", ascending=False).head(5)
+        for _, event in strongest_events.iterrows():
+            place = escape(str(event.get("place", "Sin ubicacion")))
+            category = escape(str(event.get("Categoria", "--")))
+            event_time = format_time(event.get("time"))
+            depth = format_number(event.get("depth"))
+            st.markdown(
+                f"""
+                <div class="event-row">
+                    <div>
+                        <div class="place">{place}</div>
+                        <div class="meta">{category} - {event_time} - {depth} km profundidad</div>
+                    </div>
+                    <div class="mag">M {format_number(event.get("mag"))}</div>
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
     else:
         st.info("Ajusta los filtros para ver resumen.")
