@@ -705,7 +705,6 @@ st.markdown(
     setTimeout(fixSelects, 100);
     setTimeout(fixSelects, 500);
     setTimeout(fixSelects, 1500);
-    setInterval(fixSelects, 3000);
     </script>
     """,
     unsafe_allow_html=True,
