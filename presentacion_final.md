@@ -63,7 +63,8 @@ Desde Mage AI:
 Desde consola:
 
 ```bash
-docker compose exec -w /home/src mage mage run earthquake_geo_pipeline earthquake_pipeline
+docker compose exec -w /home/src/earthquake_geo_pipeline mage python scripts/extract_load.py
+docker compose exec -w /home/src/earthquake_geo_pipeline mage python scripts/transform_load.py
 ```
 
 ### 3. Verificar datos
@@ -84,12 +85,14 @@ curl "http://localhost:8001/api/v1/earthquakes?limit=5&days_back=30"
 - Ejecuta dos bloques principales:
   - `extract_and_load`
   - `transform_and_load`
+- La transformacion es incremental: solo reprocesa eventos nuevos o actualizados.
 
 ### PostGIS
 
 - `raw_earthquakes`: tabla cruda con datos de USGS.
 - `earthquakes`: tabla final con columnas espaciales.
 - Indices GIST para consultas rapidas.
+- Indices adicionales por tiempo, magnitud y actualizacion para acelerar filtros.
 - Funciones SQL para resumen y consultas espaciales.
 
 ### FastAPI
@@ -109,8 +112,31 @@ Endpoints principales:
 - KPIs: total de eventos, eventos visibles, magnitud maxima y profundidad promedio.
 - Mapa Folium con marcadores por magnitud.
 - Filtros por magnitud, dias y radio geografico.
-- Tabla de ultimos eventos.
-- Resumen visual por categoria de magnitud y eventos recientes.
+- Tabla de eventos con paleta clara y scroll.
+- Resumen visual con tarjetas analiticas, distribucion por magnitud, zonas frecuentes y magnitud vs profundidad.
+
+---
+
+## Mejoras Implementadas Tras el Avance
+
+### Rendimiento de datos
+
+- Antes el proceso podia volver a transformar todos los registros crudos.
+- Ahora el ETL usa carga por lote e identifica registros nuevos o actualizados.
+- En la ultima validacion, despues de extraer la fuente mensual, solo se transformaron 4 registros incrementales.
+- Esto reduce trabajo innecesario y hace mas estable la ejecucion cada 12 horas.
+
+### Visualizacion
+
+- Se corrigio la paleta para evitar texto oscuro sobre fondos oscuros.
+- Se redisenaron tabla, graficas, encabezado, dropdowns y barra lateral.
+- El dashboard mantiene limites de dibujo para que el mapa no cargue demasiados puntos al mismo tiempo.
+
+### Analisis
+
+- Se agregaron tarjetas interpretativas.
+- Las graficas ahora explican distribucion por magnitud, zonas mas frecuentes y relacion magnitud/profundidad.
+- Los eventos destacados permiten identificar rapidamente los sismos mas importantes.
 
 ---
 

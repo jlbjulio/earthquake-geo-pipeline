@@ -52,6 +52,15 @@ USGS Earthquake API
   Mage AI  (orquesta pipeline cada 12h)
 ```
 
+## Mejoras de rendimiento y presentacion
+
+- La carga cruda usa inserciones por lote en vez de insertar evento por evento.
+- La transformacion ahora es incremental: solo procesa eventos nuevos o eventos cuyo `updated` cambio en USGS.
+- Se agregaron indices para filtros frecuentes: tiempo, magnitud y actualizacion.
+- El dashboard limita la cantidad dibujada en mapa/tabla para mantener respuesta fluida sin borrar datos de la base.
+- El resumen visual se reorganizo con tarjetas analiticas, graficas claras y eventos destacados.
+- La paleta visual se normalizo: fondos claros para texto chocolate y barra lateral chocolate con texto claro.
+
 ## Servicios
 
 | Servicio   | Puerto | URL                        |

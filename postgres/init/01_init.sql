@@ -82,8 +82,20 @@ CREATE INDEX IF NOT EXISTS idx_earthquakes_mag
 CREATE INDEX IF NOT EXISTS idx_earthquakes_time
     ON earthquakes (time DESC);
 
+CREATE INDEX IF NOT EXISTS idx_earthquakes_time_mag
+    ON earthquakes (time DESC, mag DESC);
+
+CREATE INDEX IF NOT EXISTS idx_earthquakes_updated
+    ON earthquakes (updated DESC);
+
 CREATE INDEX IF NOT EXISTS idx_earthquakes_tsunami
     ON earthquakes (tsunami);
+
+CREATE INDEX IF NOT EXISTS idx_raw_earthquakes_updated
+    ON raw_earthquakes (updated DESC);
+
+CREATE INDEX IF NOT EXISTS idx_raw_earthquakes_time
+    ON raw_earthquakes (time DESC);
 
 -- =============================================
 -- Tabla: tsunami_events

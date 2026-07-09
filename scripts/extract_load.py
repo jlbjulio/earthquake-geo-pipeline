@@ -79,33 +79,46 @@ def extract_earthquakes(url: str | None = None) -> pd.DataFrame:
 
 
 def load_raw(df: pd.DataFrame, engine) -> int:
-    count = 0
+    if df.empty:
+        return 0
+
+    records = [
+        {key: (None if pd.isna(value) else value) for key, value in row.items()}
+        for row in df.to_dict(orient="records")
+    ]
+
+    sql = text("""
+        INSERT INTO raw_earthquakes (
+            id, usgs_id, mag, place, time, updated, tz, url, detail,
+            felt, cdi, mmi, alert, status, tsunami, sig, net, code,
+            ids, sources, types, nst, dmin, rms, gap, magType,
+            geometry_type, longitude, latitude, depth
+        ) VALUES (
+            :id, :usgs_id, :mag, :place, :time, :updated, :tz, :url, :detail,
+            :felt, :cdi, :mmi, :alert, :status, :tsunami, :sig, :net, :code,
+            :ids, :sources, :types, :nst, :dmin, :rms, :gap, :magType,
+            :geometry_type, :longitude, :latitude, :depth
+        )
+        ON CONFLICT (usgs_id) DO UPDATE SET
+            mag = EXCLUDED.mag,
+            place = EXCLUDED.place,
+            time = EXCLUDED.time,
+            updated = EXCLUDED.updated,
+            alert = EXCLUDED.alert,
+            status = EXCLUDED.status,
+            tsunami = EXCLUDED.tsunami,
+            sig = EXCLUDED.sig,
+            magType = EXCLUDED.magType,
+            geometry_type = EXCLUDED.geometry_type,
+            longitude = EXCLUDED.longitude,
+            latitude = EXCLUDED.latitude,
+            depth = EXCLUDED.depth,
+            ingested_at = NOW()
+    """)
+
     with engine.begin() as conn:
-        for _, row in df.iterrows():
-            conn.execute(
-                text("""
-                    INSERT INTO raw_earthquakes (
-                        id, usgs_id, mag, place, time, updated, tz, url, detail,
-                        felt, cdi, mmi, alert, status, tsunami, sig, net, code,
-                        ids, sources, types, nst, dmin, rms, gap, magType,
-                        geometry_type, longitude, latitude, depth
-                    ) VALUES (
-                        :id, :usgs_id, :mag, :place, :time, :updated, :tz, :url, :detail,
-                        :felt, :cdi, :mmi, :alert, :status, :tsunami, :sig, :net, :code,
-                        :ids, :sources, :types, :nst, :dmin, :rms, :gap, :magType,
-                        :geometry_type, :longitude, :latitude, :depth
-                    )
-                    ON CONFLICT (usgs_id) DO UPDATE SET
-                        mag = EXCLUDED.mag,
-                        place = EXCLUDED.place,
-                        time = EXCLUDED.time,
-                        updated = EXCLUDED.updated,
-                        ingested_at = NOW()
-                """),
-                {k: (None if pd.isna(v) else v) for k, v in row.items()}
-            )
-            count += 1
-    return count
+        conn.execute(sql, records)
+    return len(records)
 
 
 def extract_and_load():

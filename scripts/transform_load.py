@@ -28,14 +28,30 @@ def get_engine():
     return create_engine(db_url)
 
 
-def read_raw_earthquakes(engine) -> pd.DataFrame:
-    """Lee datos crudos desde la tabla raw_earthquakes en PostGIS."""
-    query = text("""
-        SELECT usgs_id, mag, place, time, updated, magType AS magtype, tsunami, alert,
-               status, sig, depth, longitude, latitude
-        FROM raw_earthquakes
-        WHERE longitude IS NOT NULL AND latitude IS NOT NULL
-    """)
+def read_raw_earthquakes(engine, incremental: bool = True) -> pd.DataFrame:
+    """Lee datos crudos; por defecto solo eventos nuevos o actualizados."""
+    if incremental:
+        query = text("""
+            SELECT r.usgs_id, r.mag, r.place, r.time, r.updated,
+                   r.magType AS magtype, r.tsunami, r.alert,
+                   r.status, r.sig, r.depth, r.longitude, r.latitude
+            FROM raw_earthquakes r
+            LEFT JOIN earthquakes e ON e.usgs_id = r.usgs_id
+            WHERE r.longitude IS NOT NULL
+              AND r.latitude IS NOT NULL
+              AND (
+                  e.usgs_id IS NULL
+                  OR COALESCE(r.updated, r.time, 'epoch'::timestamptz)
+                     > COALESCE(e.updated, e.time, 'epoch'::timestamptz)
+              )
+        """)
+    else:
+        query = text("""
+            SELECT usgs_id, mag, place, time, updated, magType AS magtype, tsunami, alert,
+                   status, sig, depth, longitude, latitude
+            FROM raw_earthquakes
+            WHERE longitude IS NOT NULL AND latitude IS NOT NULL
+        """)
     with engine.connect() as conn:
         return pd.read_sql_query(query, conn)
 
@@ -72,60 +88,73 @@ def load_processed(gdf: gpd.GeoDataFrame, engine) -> int:
     if gdf.empty:
         return 0
 
-    count = 0
+    records = []
+    for _, row in gdf.iterrows():
+        records.append({
+            "usgs_id": row.get("usgs_id"),
+            "mag": row.get("mag"),
+            "place": row.get("place"),
+            "time": row.get("time"),
+            "updated": row.get("updated"),
+            "magType": row.get("magtype"),
+            "tsunami": row.get("tsunami", 0),
+            "alert": row.get("alert", ""),
+            "status": row.get("status", "unknown"),
+            "sig": row.get("sig", 0),
+            "depth": row.get("depth", 0),
+            "wkt": row.geometry.wkt,
+        })
+
+    sql = text("""
+        INSERT INTO earthquakes (
+            usgs_id, mag, place, time, updated, magType, tsunami,
+            alert, status, sig, depth, location, geom
+        ) VALUES (
+            :usgs_id, :mag, :place, :time, :updated, :magType, :tsunami,
+            :alert, :status, :sig, :depth,
+            ST_GeogFromText(:wkt),
+            ST_GeomFromText(:wkt, 4326)
+        )
+        ON CONFLICT (usgs_id) DO UPDATE SET
+            mag = EXCLUDED.mag,
+            place = EXCLUDED.place,
+            time = EXCLUDED.time,
+            updated = EXCLUDED.updated,
+            magType = EXCLUDED.magType,
+            tsunami = EXCLUDED.tsunami,
+            alert = EXCLUDED.alert,
+            status = EXCLUDED.status,
+            sig = EXCLUDED.sig,
+            depth = EXCLUDED.depth,
+            location = EXCLUDED.location,
+            geom = EXCLUDED.geom,
+            processed_at = NOW()
+    """)
+
     with engine.begin() as conn:
-        for _, row in gdf.iterrows():
-            wkt = row.geometry.wkt
-            conn.execute(
-                text("""
-                    INSERT INTO earthquakes (
-                        usgs_id, mag, place, time, updated, magType, tsunami,
-                        alert, status, sig, depth, location, geom
-                    ) VALUES (
-                        :usgs_id, :mag, :place, :time, :updated, :magType, :tsunami,
-                        :alert, :status, :sig, :depth,
-                        ST_GeogFromText(:wkt),
-                        ST_GeomFromText(:wkt, 4326)
-                    )
-                    ON CONFLICT (usgs_id) DO UPDATE SET
-                        mag = EXCLUDED.mag,
-                        place = EXCLUDED.place,
-                        time = EXCLUDED.time,
-                        updated = EXCLUDED.updated,
-                        location = EXCLUDED.location,
-                        geom = EXCLUDED.geom,
-                        processed_at = NOW()
-                """),
-                {
-                    "usgs_id": row.get("usgs_id"),
-                    "mag": row.get("mag"),
-                    "place": row.get("place"),
-                    "time": row.get("time"),
-                    "updated": row.get("updated"),
-                    "magType": row.get("magtype"),
-                    "tsunami": row.get("tsunami", 0),
-                    "alert": row.get("alert", ""),
-                    "status": row.get("status", "unknown"),
-                    "sig": row.get("sig", 0),
-                    "depth": row.get("depth", 0),
-                    "wkt": wkt,
-                },
-            )
-            count += 1
-    return count
+        conn.execute(sql, records)
+    return len(records)
 
 
 def transform_and_load():
     engine = get_engine()
-    df_raw = read_raw_earthquakes(engine)
-    print(f"Leidos {len(df_raw)} registros desde raw_earthquakes")
+    full_reprocess = os.getenv("FULL_REPROCESS", "false").lower() in {"1", "true", "yes"}
+    incremental = not full_reprocess
+    df_raw = read_raw_earthquakes(engine, incremental=incremental)
+    mode = "incrementales" if incremental else "totales"
+    print(f"Leidos {len(df_raw)} registros {mode} desde raw_earthquakes")
 
     gdf = transform_to_geodataframe(df_raw)
     print(f"Transformados {len(gdf)} registros a GeoDataFrame con geometrias")
 
     count = load_processed(gdf, engine)
     print(f"Cargados {count} eventos a tabla final earthquakes")
-    return {"leidos": len(df_raw), "transformados": len(gdf), "cargados": count}
+    return {
+        "modo": mode,
+        "leidos": len(df_raw),
+        "transformados": len(gdf),
+        "cargados": count,
+    }
 
 
 if __name__ == "__main__":
