@@ -1,6 +1,6 @@
 import os
 from html import escape
-from math import pi, sqrt
+from math import ceil, pi, sqrt
 
 import altair as alt
 import folium
@@ -18,7 +18,7 @@ API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8001").rstrip("/")
 API_PUBLIC_URL = os.getenv("API_PUBLIC_URL", API_BASE_URL).rstrip("/")
 
 EXTRA_LOCATION_PRESETS = {
-    "Personalizado": {"lat": 8.9824, "lon": -79.5199, "radius": 500},
+    "Personalizado": {"lat": 8.9824, "lon": -79.5199, "radius": 600},
     "Afganistan": {"lat": 33.9391, "lon": 67.7100, "radius": 900},
     "Alaska": {"lat": 64.2008, "lon": -149.4937, "radius": 1000},
     "Alemania": {"lat": 51.1657, "lon": 10.4515, "radius": 650},
@@ -79,6 +79,31 @@ MAP_STYLES = {
     },
 }
 
+EVENT_VIEW_OPTIONS = {
+    "Mas recientes": {
+        "sort": "recent",
+        "paged": False,
+        "caption": "Ordena por fecha UTC, del evento mas nuevo al mas antiguo.",
+    },
+    "Mayor magnitud primero": {
+        "sort": "mag_desc",
+        "paged": False,
+        "caption": "Muestra primero los sismos de mayor magnitud.",
+    },
+    "Menor magnitud primero": {
+        "sort": "mag_asc",
+        "paged": False,
+        "caption": "Muestra primero los sismos de menor magnitud.",
+    },
+    "Todos los eventos": {
+        "sort": "recent",
+        "paged": True,
+        "caption": "Recorre todo lo cargado en la base por paginas; respeta magnitud y zona seleccionada.",
+    },
+}
+
+TABLE_PAGE_SIZE = 250
+
 
 def estimate_country_radius(area):
     try:
@@ -138,7 +163,6 @@ st.markdown(
         --panel: #fff8f0;
         --panel-strong: #ffffff;
         --line: #dfc9b7;
-        --app-bg: #2b1712;
         --main-bg: #f4e8dc;
         --sidebar: #24120e;
         --sidebar-soft: #3a211b;
@@ -151,28 +175,18 @@ st.markdown(
         --focus: #8d4c31;
     }
     .stApp {
-        background: var(--app-bg);
+        background: var(--main-bg);
         color: var(--ink);
         font-family: "Segoe UI", Arial, sans-serif;
-        text-rendering: optimizeLegibility;
-    }
-    .stApp *,
-    div[data-baseweb="popover"] *,
-    div[data-baseweb="tooltip"] * {
-        text-shadow: none !important;
-        filter: none !important;
-        opacity: 1 !important;
     }
     [data-testid="stAppViewContainer"],
     [data-testid="stMain"] {
         background: var(--main-bg);
     }
-    header[data-testid="stHeader"],
-    [data-testid="stHeader"] {
+    header[data-testid="stHeader"] {
         background: var(--main-bg) !important;
         color: var(--ink) !important;
         border-bottom: 1px solid var(--line) !important;
-        box-shadow: 0 1px 2px rgba(36, 21, 15, 0.08) !important;
     }
     [data-testid="stDecoration"] {
         background: var(--primary) !important;
@@ -197,12 +211,6 @@ st.markdown(
         background: #fff8f0 !important;
         color: var(--ink) !important;
         border-color: var(--line) !important;
-    }
-    [data-testid="stToolbar"] button:hover,
-    [data-testid="stDeployButton"] button:hover,
-    [data-testid="stMainMenu"] button:hover {
-        background: #f0d9c7 !important;
-        color: var(--ink) !important;
     }
     .block-container {
         background: var(--main-bg);
@@ -254,6 +262,7 @@ st.markdown(
     [data-testid="stCaptionContainer"] {
         color: var(--muted);
     }
+    section[data-testid="stSidebar"] div[data-baseweb="select"],
     section[data-testid="stSidebar"] div[data-baseweb="select"] > div,
     section[data-testid="stSidebar"] div[data-baseweb="input"] > div,
     section[data-testid="stSidebar"] div[data-baseweb="base-input"] {
@@ -293,46 +302,79 @@ st.markdown(
     }
     div[data-baseweb="popover"],
     div[data-baseweb="tooltip"] {
-        background: #fff8f0 !important;
+        background: #fffaf7 !important;
         border: 1px solid var(--line) !important;
         border-radius: 8px !important;
         box-shadow: 0 6px 14px rgba(36, 21, 15, 0.18) !important;
-        backdrop-filter: none !important;
-        -webkit-backdrop-filter: none !important;
-        filter: none !important;
-        opacity: 1 !important;
     }
     div[data-baseweb="popover"] > div,
     div[data-baseweb="tooltip"] > div {
         background: #fffaf7 !important;
-        filter: none !important;
-        opacity: 1 !important;
     }
     div[data-baseweb="popover"] ul,
     div[data-baseweb="popover"] li,
     div[data-baseweb="popover"] [role="listbox"],
     div[data-baseweb="popover"] [role="option"] {
         background: #fffaf7 !important;
-        color: var(--ink) !important;
+        color: #24150f !important;
         font-family: "Segoe UI", Arial, sans-serif !important;
         font-size: 1rem !important;
         font-weight: 400 !important;
         letter-spacing: 0 !important;
         line-height: 1.35 !important;
         min-height: 2.45rem !important;
-        text-rendering: optimizeLegibility !important;
-        -webkit-font-smoothing: auto !important;
     }
     div[data-baseweb="popover"] [role="option"]:hover,
     div[data-baseweb="popover"] [aria-selected="true"] {
         background: #f0d9c7 !important;
-        color: var(--ink) !important;
+        color: #24150f !important;
     }
     div[data-baseweb="popover"] *,
     div[data-baseweb="tooltip"] *,
     [role="tooltip"],
     [role="tooltip"] * {
-        color: var(--ink) !important;
+        color: #24150f !important;
+    }
+    div[data-baseweb="popover"] span,
+    div[data-baseweb="popover"] div,
+    div[data-baseweb="select"] [role="listbox"] span,
+    div[data-baseweb="select"] [role="listbox"] div {
+        color: #24150f !important;
+        background: #fffaf7 !important;
+    }
+    section[data-testid="stSidebar"] div[data-baseweb="popover"] *,
+    section[data-testid="stSidebar"] div[data-baseweb="select"] [role="listbox"] * {
+        color: #24150f !important;
+        background: #fffaf7 !important;
+    }
+    div[role="listbox"] > div,
+    div[role="listbox"] > div > div,
+    div[role="listbox"] ul,
+    div[role="listbox"] li,
+    div[data-baseweb="menu"] *,
+    div[data-baseweb="menu"] div,
+    div[data-baseweb="menu"] span {
+        background: #fffaf7 !important;
+        color: #24150f !important;
+    }
+    [role="combobox"],
+    [role="combobox"] * {
+        background-color: #fffaf7 !important;
+        color: #24150f !important;
+    }
+    [role="combobox"] svg,
+    [role="combobox"] svg path,
+    [role="combobox"] svg polyline,
+    [role="combobox"] svg polygon {
+        fill: #24150f !important;
+        color: #24150f !important;
+        stroke: #24150f !important;
+    }
+    .stSelectbox svg,
+    [data-baseweb="select"] svg,
+    div[data-baseweb="select"] svg {
+        fill: #24150f !important;
+        color: #24150f !important;
     }
     [data-testid="stMain"] div[data-baseweb="select"] > div,
     [data-testid="stMain"] div[data-baseweb="input"] > div,
@@ -518,6 +560,38 @@ st.markdown(
         border-color: var(--primary) !important;
         color: #ffffff !important;
     }
+    div[data-testid="stButton"] button,
+    div[data-testid="stDownloadButton"] button,
+    .block-container button:not([data-baseweb="tab"]),
+    section[data-testid="stSidebar"] button {
+        background: #fff8f0 !important;
+        color: var(--ink) !important;
+        border: 1px solid var(--line) !important;
+        border-radius: 8px !important;
+        box-shadow: 0 1px 2px rgba(36, 21, 15, 0.08) !important;
+        font-weight: 500 !important;
+    }
+    div[data-testid="stButton"] button:hover,
+    div[data-testid="stDownloadButton"] button:hover,
+    .block-container button:not([data-baseweb="tab"]):hover,
+    section[data-testid="stSidebar"] button:hover {
+        background: #f0d9c7 !important;
+        color: var(--primary-dark) !important;
+        border-color: #9b6a54 !important;
+    }
+    div[data-testid="stButton"] button:disabled,
+    div[data-testid="stButton"] button[disabled] {
+        background: #eadccd !important;
+        color: #7c6659 !important;
+        border-color: #d6c0ad !important;
+        opacity: 1 !important;
+    }
+    div[data-testid="stButton"] button[kind="primary"],
+    section[data-testid="stSidebar"] div[data-testid="stButton"] button[kind="primary"] {
+        background: var(--primary) !important;
+        border-color: var(--primary) !important;
+        color: #fff8f2 !important;
+    }
     div[data-baseweb="tab-list"] {
         gap: 0.25rem;
     }
@@ -557,6 +631,19 @@ st.markdown(
         background: #fff8f0;
         box-shadow: 0 1px 3px rgba(36, 21, 15, 0.08);
     }
+    .table-note {
+        background: #fff8f0;
+        border: 1px solid var(--line);
+        border-left: 5px solid var(--primary);
+        border-radius: 8px;
+        color: var(--ink);
+        padding: 0.7rem 0.85rem;
+        margin: 0.4rem 0 0.75rem 0;
+        line-height: 1.45;
+    }
+    .table-note strong {
+        color: var(--primary-dark);
+    }
     .events-table {
         width: 100%;
         border-collapse: separate;
@@ -595,6 +682,31 @@ st.markdown(
         border-left: 0;
     }
     </style>
+    <script>
+    function fixSelects() {
+        document.querySelectorAll('[role="combobox"]').forEach(function(el) {
+            el.style.setProperty('background-color', '#fffaf7', 'important');
+            el.style.setProperty('color', '#24150f', 'important');
+        });
+        document.querySelectorAll('[data-baseweb="select"] svg').forEach(function(s) {
+            s.setAttribute('fill', '#24150f');
+            s.style.setProperty('fill', '#24150f', 'important');
+            s.style.setProperty('color', '#24150f', 'important');
+            if (s.parentElement) {
+                s.parentElement.style.setProperty('color', '#24150f', 'important');
+            }
+        });
+        document.querySelectorAll('.stSelectbox svg').forEach(function(s) {
+            s.setAttribute('fill', '#24150f');
+            s.style.setProperty('fill', '#24150f', 'important');
+        });
+    }
+    document.addEventListener('DOMContentLoaded', fixSelects);
+    setTimeout(fixSelects, 100);
+    setTimeout(fixSelects, 500);
+    setTimeout(fixSelects, 1500);
+    setInterval(fixSelects, 3000);
+    </script>
     """,
     unsafe_allow_html=True,
 )
@@ -619,6 +731,10 @@ def format_time(value):
     if pd.isna(parsed):
         return "--"
     return parsed.strftime("%Y-%m-%d %H:%M UTC")
+
+
+def format_period_label(use_all_time, days_back):
+    return "Todo lo cargado" if use_all_time else f"Ultimos {days_back} dias"
 
 
 def magnitude_color(mag):
@@ -652,6 +768,97 @@ def average_depth(rows):
     if not depths:
         return None
     return sum(depths) / len(depths)
+
+
+def build_event_params(
+    min_mag,
+    max_mag,
+    days_back,
+    use_all_time,
+    limit,
+    sort,
+    offset=0,
+    radius_data=None,
+):
+    params = {
+        "min_mag": min_mag,
+        "max_mag": max_mag,
+        "limit": limit,
+        "offset": offset,
+        "sort": sort,
+    }
+    if use_all_time:
+        params["all_time"] = True
+    else:
+        params["days_back"] = days_back
+    if radius_data:
+        params.update(radius_data)
+    return params
+
+
+def change_events_page(delta):
+    current_page = int(st.session_state.get("events_page", 1))
+    st.session_state.events_page = max(1, current_page + delta)
+
+
+def render_events_table(rows):
+    if not rows:
+        st.info("No hay eventos con los filtros actuales.")
+        return
+
+    df = pd.DataFrame(rows)
+    df["time"] = pd.to_datetime(df["time"], errors="coerce", utc=True)
+    df["Fecha UTC"] = df["time"].dt.strftime("%Y-%m-%d")
+    df["Hora UTC"] = df["time"].dt.strftime("%H:%M")
+    df["Mes UTC"] = df["time"].dt.strftime("%Y-%m")
+    df["Ano UTC"] = df["time"].dt.strftime("%Y")
+    df["Categoria"] = df["mag"].apply(magnitude_label)
+    if "distance_km" in df.columns:
+        df["Distancia km"] = df["distance_km"]
+
+    rename_map = {
+        "mag": "Magnitud",
+        "place": "Lugar",
+        "depth": "Profundidad km",
+        "latitude": "Latitud",
+        "longitude": "Longitud",
+        "magType": "Tipo",
+        "alert": "Alerta",
+        "status": "Estado",
+    }
+    df = df.rename(columns=rename_map)
+    columns = [
+        "Magnitud",
+        "Categoria",
+        "Lugar",
+        "Fecha UTC",
+        "Hora UTC",
+        "Mes UTC",
+        "Ano UTC",
+        "Profundidad km",
+        "Latitud",
+        "Longitud",
+        "Tipo",
+        "Alerta",
+        "Estado",
+        "Distancia km",
+    ]
+    columns = [column for column in columns if column in df.columns]
+    table_df = df[columns].copy()
+    for column in ["Magnitud", "Profundidad km", "Latitud", "Longitud", "Distancia km"]:
+        if column in table_df.columns:
+            table_df[column] = pd.to_numeric(table_df[column], errors="coerce").round(2)
+
+    table_html = table_df.to_html(
+        index=False,
+        escape=True,
+        classes="events-table",
+        border=0,
+    )
+    st.markdown(
+        f"<div class='table-wrap'>{table_html}</div>",
+        unsafe_allow_html=True,
+    )
 
 
 def region_from_place(place):
@@ -690,10 +897,10 @@ def insight_text(counts, total):
     severe = int(counts.get("Severo", 0))
     strong = int(counts.get("Fuerte", 0))
     if severe:
-        return "Hay eventos severos visibles; conviene revisar detalle y ubicacion."
+        return "Hay eventos severos en el analisis; conviene revisar detalle y ubicacion."
     if strong:
         return "Predominan eventos no severos, pero existen sismos fuertes relevantes."
-    return "La actividad visible se concentra en magnitudes micro o leves."
+    return "La actividad seleccionada se concentra en magnitudes micro o leves."
 
 
 def chart_base(chart):
@@ -727,13 +934,13 @@ def chart_base(chart):
     )
 
 
-@st.cache_data(ttl=10, show_spinner=False)
+@st.cache_data(ttl=60, show_spinner=False)
 def fetch_data(endpoint: str, params: tuple = ()) -> dict:
     query = dict(params)
     response = requests.get(
         f"{API_BASE_URL}/api/v1/{endpoint}",
         params=query,
-        timeout=12,
+        timeout=10,
     )
     response.raise_for_status()
     return response.json()
@@ -762,6 +969,7 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
         tiles=None,
         control_scale=True,
         prefer_canvas=True,
+        zoom_control=False,
     )
     style = MAP_STYLES.get(map_style, MAP_STYLES["Claro detallado"])
     folium.TileLayer(
@@ -776,12 +984,25 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
         color = magnitude_color(mag)
         radius = max(4, min(6 + mag * 2.2, 24))
         detail_url = f"{API_PUBLIC_URL}/api/v1/earthquakes/{eq['usgs_id']}"
+        parsed_time = pd.to_datetime(eq.get("time"), errors="coerce", utc=True)
+        if pd.isna(parsed_time):
+            date_label = "--"
+            hour_label = "--"
+            month_label = "--"
+            year_label = "--"
+        else:
+            date_label = parsed_time.strftime("%Y-%m-%d")
+            hour_label = parsed_time.strftime("%H:%M UTC")
+            month_label = parsed_time.strftime("%Y-%m")
+            year_label = parsed_time.strftime("%Y")
         popup_html = (
             f"<b>{eq.get('place', 'Unknown')}</b><br>"
             f"Magnitud: {mag}<br>"
             f"Categoria: {magnitude_label(mag)}<br>"
             f"Profundidad: {eq.get('depth', 'N/A')} km<br>"
-            f"Hora: {format_time(eq.get('time'))}<br>"
+            f"Fecha UTC: {date_label}<br>"
+            f"Hora UTC: {hour_label}<br>"
+            f"Mes/Ano: {month_label} / {year_label}<br>"
             f"<a href='{detail_url}' target='_blank'>Ver detalle API</a>"
         )
 
@@ -821,6 +1042,7 @@ with st.sidebar:
         "Que quieres explorar?",
         ["Eventos recientes", "Cerca de una zona"],
         horizontal=True,
+        key="view_mode",
     )
     use_radius = view_mode == "Cerca de una zona"
 
@@ -828,25 +1050,28 @@ with st.sidebar:
         "Magnitud que quieres ver",
         min_value=0.0,
         max_value=9.0,
-        value=(1.0, 7.5),
+        value=(0.0, 9.0),
         step=0.1,
+        key="mag_range",
     )
 
-    days_back = st.slider(
-        "Periodo de tiempo",
-        1,
-        30,
-        7,
+    time_range = st.selectbox(
+        "Periodo a consultar",
+        ["Ultimas 24 horas", "7 dias", "30 dias", "1 Año", "10 años"],
+        index=1,
+        key="time_range",
     )
-    st.caption("Cuantos dias recientes quieres consultar.")
-    limit = st.slider(
-        "Cantidad maxima en pantalla",
+    days_back = {"Ultimas 24 horas": 1, "7 dias": 7, "30 dias": 30, "1 Año": 365, "10 años": 3650}[time_range]
+
+    map_limit = st.slider(
+        "Eventos visibles en mapa",
         50,
         1000,
         500,
         step=50,
+        key="map_limit",
     )
-    st.caption("Solo limita cuantos sismos se dibujan en el mapa y la tabla. La base puede tener muchos mas.")
+    st.caption("Solo limita cuantos puntos se dibujan para que el mapa cargue rapido. La tabla puede recorrer todos por paginas.")
 
     lat = LOCATION_PRESETS["Panama"]["lat"]
     lon = LOCATION_PRESETS["Panama"]["lon"]
@@ -878,19 +1103,18 @@ with st.sidebar:
     map_style = st.selectbox(
         "Tipo de mapa",
         list(MAP_STYLES.keys()),
+        key="map_style",
     )
 
-    refresh = st.button("Actualizar datos", width="stretch", type="primary")
-    if refresh:
-        st.rerun()
-
     st.caption("Fuente: USGS Earthquake Catalog")
+
     with st.expander("Guia rapida"):
         st.write("1. Usa Eventos recientes para ver sismos globales.")
         st.write("2. Usa Cerca de una zona para buscar alrededor de un pais o escribir sus coordenadas.")
         st.write("3. Ajusta la magnitud para ocultar eventos muy pequenos.")
-        st.write("4. Cantidad maxima en pantalla no borra datos; solo hace mas rapido el mapa.")
-        st.write("5. El mapa, la tabla y el resumen usan los mismos filtros.")
+        st.write("4. Eventos visibles en mapa no borra datos; solo hace mas rapido el mapa.")
+        st.write("5. En Eventos puedes usar Todos los eventos para recorrer la base por paginas.")
+        st.write("6. El resumen tiene sus propios filtros dentro del tab Resumen.")
 
 st.markdown(
     """
@@ -902,7 +1126,7 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-health, health_error = safe_fetch("health")
+health, health_error = safe_fetch("health", {"_": 1})
 stats, stats_error = safe_fetch("earthquakes/stats")
 
 status_html = (
@@ -922,34 +1146,61 @@ st.markdown(
 if health_error:
     st.error(f"No se pudo conectar con el backend: {health_error}")
 
-query_params = {
+radius_params = {"lat": lat, "lon": lon, "dist_km": dist_km} if use_radius else None
+map_params = build_event_params(
+    min_mag=min_mag,
+    max_mag=max_mag,
+    days_back=days_back,
+    use_all_time=False,
+    limit=map_limit,
+    offset=0,
+    sort="distance" if use_radius else "recent",
+    radius_data=radius_params,
+)
+if use_radius:
+    data, data_error = safe_fetch("earthquakes/radius", map_params)
+else:
+    data, data_error = safe_fetch("earthquakes", map_params)
+
+overview_params = {
     "min_mag": min_mag,
-    "limit": limit,
+    "max_mag": max_mag,
+    "days_back": days_back,
 }
 if use_radius:
-    query_params.update({"lat": lat, "lon": lon, "dist_km": dist_km})
-    data, data_error = safe_fetch("earthquakes/radius", query_params)
-else:
-    query_params.update({"max_mag": max_mag, "days_back": days_back})
-    data, data_error = safe_fetch("earthquakes", query_params)
+    overview_params.update({"lat": lat, "lon": lon, "dist_km": dist_km})
+overview_data, overview_error = safe_fetch("earthquakes/analysis", overview_params)
 
-rows = [
+map_rows = [
     row for row in data.get("results", [])
     if float(row.get("mag") or 0) <= max_mag
 ]
+filtered_total_from_list = int(data.get("total_count") or len(map_rows))
 
 if data_error:
     st.warning(f"No se pudieron cargar eventos: {data_error}")
+if overview_error:
+    st.warning(f"No se pudieron cargar los indicadores principales: {overview_error}")
 
-avg_depth = average_depth(rows)
+overview_summary = overview_data.get("summary") or {}
+total_found = int(overview_summary.get("total_events") or filtered_total_from_list)
+avg_depth = overview_summary.get("avg_depth")
 
 metric_cols = st.columns(4)
 metric_cols[0].metric("Eventos en base", format_number(stats.get("total_events")))
-metric_cols[1].metric("Eventos visibles", format_number(len(rows)))
-metric_cols[2].metric("Magnitud max.", format_number(stats.get("max_magnitude")))
+metric_cols[1].metric("Sismos encontrados", format_number(total_found))
+metric_cols[2].metric("Eventos en mapa", format_number(len(map_rows)))
 metric_cols[3].metric(
-    "Profundidad prom.",
-    f"{format_number(avg_depth)} km" if avg_depth is not None else "--",
+    "Magnitud mayor",
+    format_number(overview_summary.get("max_magnitude")),
+)
+st.caption(
+    f"Periodo: {time_range}. "
+    f"El mapa dibuja hasta {map_limit:,} puntos."
+)
+st.caption(
+    "Profundidad promedio: "
+    + (f"{format_number(avg_depth)} km" if avg_depth is not None else "--"),
 )
 
 tab_map, tab_table, tab_summary = st.tabs(
@@ -970,21 +1221,22 @@ with tab_map:
     )
     left, right = st.columns([3, 1])
     with left:
-        fmap = build_map(rows, use_radius, lat, lon, dist_km, map_style)
-        st_folium(fmap, width=None, height=570, key="main_map")
+        fmap = build_map(map_rows, use_radius, lat, lon, dist_km, map_style)
+        st_folium(fmap, width=None, height=570, key="main_map", use_container_width=True)
     with right:
         st.subheader("Vista actual")
-        st.metric("Eventos visibles", len(rows))
-        st.metric("Magnitud minima", f"{min_mag:.1f}")
+        st.metric("Sismos encontrados", format_number(total_found))
+        st.metric("Puntos en mapa", format_number(len(map_rows)))
+        st.metric("Magnitud", f"{min_mag:.1f} - {max_mag:.1f}")
+        st.caption(f"Periodo: {time_range}")
         if use_radius:
             st.metric("Distancia", f"{dist_km:,} km")
             st.caption(f"Centro: {lat:.2f}, {lon:.2f}")
         else:
-            st.metric("Periodo", f"{days_back} dias")
-            st.metric("Magnitud maxima", f"{max_mag:.1f}")
+            st.caption("Consulta global sin radio geografico.")
 
-        if rows:
-            strongest = max(rows, key=lambda item: float(item.get("mag") or 0))
+        if map_rows:
+            strongest = max(map_rows, key=lambda item: float(item.get("mag") or 0))
             st.divider()
             st.subheader("Evento mayor")
             st.write(strongest.get("place", "Unknown"))
@@ -993,59 +1245,102 @@ with tab_map:
             st.caption(format_time(strongest.get("time")))
 
 with tab_table:
-    if rows:
-        df = pd.DataFrame(rows)
-        df["time"] = pd.to_datetime(df["time"], errors="coerce", utc=True)
-        df["Hora UTC"] = df["time"].dt.strftime("%Y-%m-%d %H:%M")
-        df["Categoria"] = df["mag"].apply(magnitude_label)
-        if "distance_km" in df.columns:
-            df["Distancia km"] = df["distance_km"]
+    event_view = st.radio(
+        "Vista de la tabla",
+        list(EVENT_VIEW_OPTIONS.keys()),
+        horizontal=True,
+    )
+    view_config = EVENT_VIEW_OPTIONS[event_view]
+    st.caption(EVENT_VIEW_OPTIONS[event_view]["caption"])
 
-        rename_map = {
-            "mag": "Magnitud",
-            "place": "Lugar",
-            "depth": "Profundidad km",
-            "latitude": "Latitud",
-            "longitude": "Longitud",
-            "magType": "Tipo",
-            "alert": "Alerta",
-            "status": "Estado",
-        }
-        df = df.rename(columns=rename_map)
-        columns = [
-            "Magnitud",
-            "Categoria",
-            "Lugar",
-            "Hora UTC",
-            "Profundidad km",
-            "Latitud",
-            "Longitud",
-            "Tipo",
-            "Alerta",
-            "Estado",
-            "Distancia km",
-        ]
-        columns = [column for column in columns if column in df.columns]
-        table_df = df[columns].copy()
-        for column in ["Magnitud", "Profundidad km", "Latitud", "Longitud", "Distancia km"]:
-            if column in table_df.columns:
-                table_df[column] = pd.to_numeric(table_df[column], errors="coerce").round(2)
-        table_html = table_df.to_html(
-            index=False,
-            escape=True,
-            classes="events-table",
-            border=0,
+    if view_config["paged"]:
+        table_use_all_time = True
+        page_size = TABLE_PAGE_SIZE
+        table_signature = (
+            use_radius,
+            round(float(lat), 4),
+            round(float(lon), 4),
+            int(dist_km),
+            round(float(min_mag), 1),
+            round(float(max_mag), 1),
+            event_view,
         )
-        st.markdown(
-            f"<div class='table-wrap'>{table_html}</div>",
+        if st.session_state.get("events_table_signature") != table_signature:
+            st.session_state.events_table_signature = table_signature
+            st.session_state.events_page = 1
+
+        endpoint = "earthquakes/radius" if use_radius else "earthquakes"
+        page_number = max(int(st.session_state.get("events_page", 1)), 1)
+        table_params = build_event_params(
+            min_mag=min_mag,
+            max_mag=max_mag,
+            days_back=days_back,
+            use_all_time=table_use_all_time,
+            limit=page_size,
+            offset=(page_number - 1) * page_size,
+            sort=view_config["sort"],
+            radius_data=radius_params,
+        )
+        table_data, table_error = safe_fetch(endpoint, table_params)
+        table_rows = table_data.get("results", [])
+        table_total = int(table_data.get("total_count") or 0)
+        total_pages = max(1, ceil(max(table_total, 1) / page_size))
+        if page_number > total_pages:
+            st.session_state.events_page = total_pages
+            page_number = total_pages
+        st.session_state.events_page = page_number
+        page_number = st.session_state.events_page
+
+        prev_col, page_col, next_col = st.columns([1, 1.35, 1])
+        if prev_col.button(
+            "Pagina anterior",
+            width="stretch",
+            disabled=page_number <= 1,
+            on_click=change_events_page,
+            args=(-1,),
+        ):
+            pass
+        page_col.markdown(
+            f"<div class='table-note'><strong>Pagina {page_number:,} de {total_pages:,}</strong></div>",
             unsafe_allow_html=True,
         )
+        if next_col.button(
+            "Siguiente pagina",
+            width="stretch",
+            disabled=page_number >= total_pages,
+            on_click=change_events_page,
+            args=(1,),
+        ):
+            pass
+
+        if table_error:
+            st.warning(f"No se pudo cargar la pagina de eventos: {table_error}")
+        render_events_table(table_rows)
     else:
-        st.info("No hay eventos con los filtros actuales.")
+        table_params = build_event_params(
+            min_mag=min_mag,
+            max_mag=max_mag,
+            days_back=days_back,
+            use_all_time=False,
+            limit=map_limit,
+            offset=0,
+            sort=view_config["sort"],
+            radius_data=radius_params,
+        )
+        endpoint = "earthquakes/radius" if use_radius else "earthquakes"
+        table_data, table_error = safe_fetch(endpoint, table_params)
+        table_rows = table_data.get("results", [])
+        table_total = int(table_data.get("total_count") or total_found)
+        if table_error:
+            st.warning(f"No se pudieron cargar eventos de tabla: {table_error}")
+        render_events_table(table_rows)
 
 with tab_summary:
-    if rows:
-        df_plot = prepare_analysis_frame(rows)
+    analysis_data = overview_data
+    analysis_summary = analysis_data.get("summary") or {}
+    total_analyzed = int(analysis_summary.get("total_events") or 0)
+
+    if total_analyzed > 0:
         labels = ["Micro", "Leve", "Fuerte", "Severo"]
         color_range = [
             MAG_COLORS["low"],
@@ -1053,21 +1348,22 @@ with tab_summary:
             MAG_COLORS["high"],
             MAG_COLORS["severe"],
         ]
-        counts = df_plot["Categoria"].value_counts().reindex(labels, fill_value=0)
-        total_visible = int(counts.sum())
-        dominant_category = counts.idxmax() if total_visible else "--"
-        strongest = df_plot.sort_values("mag", ascending=False).iloc[0]
-        active_region = (
-            df_plot["Region"].value_counts().index[0]
-            if not df_plot["Region"].empty
-            else "--"
-        )
+        counts = {
+            label: int((analysis_data.get("category_counts") or {}).get(label, 0))
+            for label in labels
+        }
+        counts_series = pd.Series(counts).reindex(labels, fill_value=0)
+        dominant_category = counts_series.idxmax() if total_analyzed else "--"
+        top_regions = analysis_data.get("top_regions") or []
+        strongest_events = analysis_data.get("strongest_events") or []
+        strongest = strongest_events[0] if strongest_events else {}
+        active_region = top_regions[0].get("region", "--") if top_regions else "--"
 
         st.markdown(
             """
             <div class="analysis-title">
                 <h2>Analisis de actividad sismica</h2>
-                <p>Resumen interpretativo de los eventos visibles con los filtros actuales.</p>
+                <p>Resumen agregado de todos los eventos que cumplen los filtros actuales.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1077,8 +1373,8 @@ with tab_summary:
         cards = [
             (
                 "Lectura rapida",
-                insight_text(counts, total_visible),
-                f"{total_visible:,} eventos analizados",
+                insight_text(counts, total_analyzed),
+                f"{total_analyzed:,} eventos analizados",
             ),
             (
                 "Categoria dominante",
@@ -1093,7 +1389,7 @@ with tab_summary:
             (
                 "Zona mas repetida",
                 escape(str(active_region)),
-                "Aparece con mayor frecuencia en la muestra visible",
+                "Aparece con mayor frecuencia en los eventos del resumen",
             ),
         ]
         for column, (label, value, note) in zip(card_cols, cards):
@@ -1112,30 +1408,32 @@ with tab_summary:
             """
             <div class="section-band">
                 <h3>Comportamiento general</h3>
-                <p>Estas graficas muestran cantidad, intensidad y profundidad para explicar mejor el patron de sismos.</p>
+                <p>Estas graficas resumen intensidad, zonas frecuentes y profundidad sin cargar todos los registros en pantalla.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
-        depth_df = df_plot.dropna(subset=["depth", "mag"]).copy()
-        region_df = (
-            df_plot["Region"]
-            .value_counts()
-            .head(8)
-            .reset_index()
+        region_df = pd.DataFrame(top_regions).rename(
+            columns={"region": "Region", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
         )
-        region_df.columns = ["Region", "Eventos"]
+        depth_df = pd.DataFrame(analysis_data.get("depth_groups") or []).rename(
+            columns={"depth_group": "Profundidad", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+        )
 
         left_chart, right_chart = st.columns([1.05, 1])
         with left_chart:
-            dist_df = counts.reset_index()
+            dist_df = counts_series.reset_index()
             dist_df.columns = ["Categoria", "Eventos"]
             dist_chart = alt.Chart(dist_df).mark_bar(
                 cornerRadiusEnd=5,
                 size=26,
             ).encode(
-                x=alt.X("Eventos:Q", title="Eventos"),
+                x=alt.X(
+                    "Eventos:Q",
+                    title="Eventos",
+                    axis=alt.Axis(tickCount=5, format=",.0f"),
+                ),
                 y=alt.Y("Categoria:N", sort=labels, title=None),
                 color=alt.Color(
                     "Categoria:N",
@@ -1147,62 +1445,144 @@ with tab_summary:
                 height=240,
                 title="Distribucion por magnitud",
             )
-            st.altair_chart(chart_base(dist_chart), use_container_width=True, theme=None)
+            st.altair_chart(chart_base(dist_chart), width="stretch", theme=None)
 
         with right_chart:
-            region_chart = alt.Chart(region_df).mark_bar(
-                cornerRadiusEnd=5,
-                color="#7a3f2a",
-            ).encode(
-                x=alt.X("Eventos:Q", title="Eventos"),
-                y=alt.Y("Region:N", sort="-x", title=None),
-                tooltip=["Region", "Eventos"],
-            ).properties(
-                height=240,
-                title="Zonas mas frecuentes",
-            )
-            st.altair_chart(chart_base(region_chart), use_container_width=True, theme=None)
+            if not region_df.empty:
+                region_chart = alt.Chart(region_df).mark_bar(
+                    cornerRadiusEnd=5,
+                    color="#7a3f2a",
+                ).encode(
+                    x=alt.X(
+                        "Eventos:Q",
+                        title="Eventos",
+                        axis=alt.Axis(tickCount=5, format=",.0f"),
+                    ),
+                    y=alt.Y("Region:N", sort="-x", title=None),
+                    tooltip=["Region", "Eventos", "Magnitud prom."],
+                ).properties(
+                    height=240,
+                    title="Zonas mas frecuentes",
+                )
+                st.altair_chart(chart_base(region_chart), width="stretch", theme=None)
+            else:
+                st.info("No hay zonas suficientes para graficar.")
 
         if not depth_df.empty:
-            scatter_chart = alt.Chart(depth_df.head(500)).mark_circle(
-                size=70,
-                opacity=0.72,
-                stroke="#fff8f0",
-                strokeWidth=0.5,
+            depth_chart = alt.Chart(depth_df).mark_bar(
+                cornerRadiusEnd=5,
+                color="#a85b36",
+                size=34,
             ).encode(
-                x=alt.X("mag:Q", title="Magnitud"),
-                y=alt.Y("depth:Q", title="Profundidad km"),
-                color=alt.Color(
-                    "Categoria:N",
-                    scale=alt.Scale(domain=labels, range=color_range),
-                    title="Categoria",
+                x=alt.X(
+                    "Eventos:Q",
+                    title="Eventos",
+                    axis=alt.Axis(tickCount=5, format=",.0f"),
+                ),
+                y=alt.Y(
+                    "Profundidad:N",
+                    sort=["Superficial", "Intermedia", "Profunda"],
+                    title=None,
+                ),
+                tooltip=["Profundidad", "Eventos", "Magnitud prom."],
+            ).properties(
+                height=210,
+                title="Eventos por profundidad",
+            )
+            st.altair_chart(chart_base(depth_chart), width="stretch", theme=None)
+
+        daily_df = pd.DataFrame(analysis_data.get("daily_counts") or []).rename(
+            columns={"period": "Fecha", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+        )
+        monthly_df = pd.DataFrame(analysis_data.get("monthly_counts") or []).rename(
+            columns={"period": "Mes", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+        )
+        yearly_df = pd.DataFrame(analysis_data.get("yearly_counts") or []).rename(
+            columns={"period": "Ano", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+        )
+        st.markdown(
+            """
+            <div class="section-band">
+                <h3>Actividad en el tiempo</h3>
+                <p>Conteo de eventos por dia, mes y ano para entender cuando se concentra la actividad seleccionada.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        if not daily_df.empty:
+            daily_df["Fecha"] = pd.to_datetime(daily_df["Fecha"], errors="coerce")
+            daily_chart = alt.Chart(daily_df).mark_bar(
+                color="#7a3f2a",
+                cornerRadiusTopLeft=3,
+                cornerRadiusTopRight=3,
+            ).encode(
+                x=alt.X("Fecha:T", title="Dia UTC", axis=alt.Axis(format="%d %b", labelAngle=-35)),
+                y=alt.Y(
+                    "Eventos:Q",
+                    title="Cantidad de eventos",
+                    axis=alt.Axis(tickCount=5, format=",.0f"),
                 ),
                 tooltip=[
-                    alt.Tooltip("place:N", title="Lugar"),
-                    alt.Tooltip("mag:Q", title="Magnitud", format=".2f"),
-                    alt.Tooltip("depth:Q", title="Profundidad km", format=".1f"),
+                    alt.Tooltip("Fecha:T", title="Dia", format="%Y-%m-%d"),
+                    "Eventos",
+                    "Magnitud prom.",
                 ],
             ).properties(
-                height=310,
-                title="Magnitud vs profundidad",
+                height=260,
+                title="Eventos por dia",
             )
-            st.altair_chart(chart_base(scatter_chart), use_container_width=True, theme=None)
-        else:
-            st.info("No hay profundidad suficiente para comparar magnitud y profundidad.")
+            st.altair_chart(chart_base(daily_chart), width="stretch", theme=None)
+
+        period_left, period_right = st.columns(2)
+        with period_left:
+            if not monthly_df.empty:
+                monthly_chart = alt.Chart(monthly_df).mark_bar(
+                    color="#a85b36",
+                    cornerRadiusEnd=5,
+                ).encode(
+                    x=alt.X("Mes:N", title="Mes UTC", sort=None),
+                    y=alt.Y(
+                        "Eventos:Q",
+                        title="Cantidad",
+                        axis=alt.Axis(tickCount=5, format=",.0f"),
+                    ),
+                    tooltip=["Mes", "Eventos", "Magnitud prom."],
+                ).properties(
+                    height=210,
+                    title="Eventos por mes",
+                )
+                st.altair_chart(chart_base(monthly_chart), width="stretch", theme=None)
+        with period_right:
+            if not yearly_df.empty:
+                yearly_chart = alt.Chart(yearly_df).mark_bar(
+                    color="#2f855a",
+                    cornerRadiusEnd=5,
+                ).encode(
+                    x=alt.X("Ano:N", title="Ano UTC", sort=None),
+                    y=alt.Y(
+                        "Eventos:Q",
+                        title="Cantidad",
+                        axis=alt.Axis(tickCount=5, format=",.0f"),
+                    ),
+                    tooltip=["Ano", "Eventos", "Magnitud prom."],
+                ).properties(
+                    height=210,
+                    title="Eventos por ano",
+                )
+                st.altair_chart(chart_base(yearly_chart), width="stretch", theme=None)
 
         st.markdown(
             """
             <div class="section-band">
                 <h3>Eventos destacados</h3>
-                <p>Los sismos con mayor magnitud dentro de la muestra visible.</p>
+                <p>Los sismos con mayor magnitud dentro de los eventos del resumen.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
-        strongest_events = df_plot.sort_values("mag", ascending=False).head(5)
-        for _, event in strongest_events.iterrows():
+        for event in strongest_events:
             place = escape(str(event.get("place", "Sin ubicacion")))
-            category = escape(str(event.get("Categoria", "--")))
+            category = escape(magnitude_label(event.get("mag")))
             event_time = format_time(event.get("time"))
             depth = format_number(event.get("depth"))
             st.markdown(

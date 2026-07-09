@@ -105,6 +105,7 @@ Endpoints principales:
 | `/api/v1/earthquakes` | Lista de sismos con filtros |
 | `/api/v1/earthquakes/radius` | Busqueda radial con `ST_DWithin` |
 | `/api/v1/earthquakes/stats` | KPIs |
+| `/api/v1/earthquakes/analysis` | Resumen agregado para analisis |
 | `/api/v1/earthquakes/clusters` | Clusters DBSCAN |
 
 ### Streamlit
@@ -113,7 +114,7 @@ Endpoints principales:
 - Mapa Folium con marcadores por magnitud.
 - Filtros por magnitud, dias y radio geografico.
 - Tabla de eventos con paleta clara y scroll.
-- Resumen visual con tarjetas analiticas, distribucion por magnitud, zonas frecuentes y magnitud vs profundidad.
+- Resumen visual conectado a un endpoint agregado: tarjetas analiticas, distribucion por magnitud, zonas frecuentes y profundidad.
 
 ---
 
@@ -135,7 +136,8 @@ Endpoints principales:
 ### Analisis
 
 - Se agregaron tarjetas interpretativas.
-- Las graficas ahora explican distribucion por magnitud, zonas mas frecuentes y relacion magnitud/profundidad.
+- El resumen ahora usa un endpoint agregado para analizar todos los eventos filtrados sin cargar todos los registros en pantalla.
+- Las graficas ahora explican distribucion por magnitud, zonas mas frecuentes y profundidad.
 - Los eventos destacados permiten identificar rapidamente los sismos mas importantes.
 
 ---

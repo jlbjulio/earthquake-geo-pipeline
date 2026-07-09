@@ -108,6 +108,7 @@ El backend se publica en `8001` para evitar conflictos con otros proyectos FastA
 | GET    | `/api/v1/earthquakes`           | Lista con filtros de magnitud y tiempo |
 | GET    | `/api/v1/earthquakes/radius`    | Busqueda radial con `ST_DWithin`       |
 | GET    | `/api/v1/earthquakes/stats`     | Estadisticas via funcion SQL           |
+| GET    | `/api/v1/earthquakes/analysis`  | Analisis agregado para el dashboard    |
 | GET    | `/api/v1/earthquakes/clusters`  | Clusters espaciales con DBSCAN         |
 | GET    | `/api/v1/earthquakes/{usgs_id}` | Detalle por ID de USGS                 |
 
