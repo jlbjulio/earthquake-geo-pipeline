@@ -29,6 +29,14 @@ def rows_without_total(rows):
     return cleaned
 
 
+def validate_magnitude_range(min_mag: float, max_mag: float) -> None:
+    if min_mag > max_mag:
+        raise HTTPException(
+            status_code=422,
+            detail="La magnitud minima no puede ser mayor que la maxima",
+        )
+
+
 @router.get("/health")
 def health_check():
     return {"status": "ok", "service": "FastAPI Earthquakes API"}
@@ -36,8 +44,8 @@ def health_check():
 
 @router.get("/earthquakes")
 def list_earthquakes(
-    min_mag: float = Query(0, ge=0, description="Magnitud minima"),
-    max_mag: float = Query(10, le=10, description="Magnitud maxima"),
+    min_mag: float = Query(0, ge=0, le=10, description="Magnitud minima"),
+    max_mag: float = Query(10, ge=0, le=10, description="Magnitud maxima"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
     days_back: int = Query(7, ge=1, description="Dias hacia atras"),
@@ -45,6 +53,7 @@ def list_earthquakes(
     sort: str = Query("recent", description="recent, mag_desc o mag_asc"),
     db: Session = Depends(get_db),
 ):
+    validate_magnitude_range(min_mag, max_mag)
     filters = ["mag BETWEEN :min_mag AND :max_mag", *build_time_filter(all_time)]
     where_clause = " AND ".join(filters)
     order_by = EVENT_SORTS.get(sort, EVENT_SORTS["recent"])
@@ -88,11 +97,11 @@ def list_earthquakes(
 
 @router.get("/earthquakes/radius")
 def earthquakes_in_radius(
-    lat: float = Query(..., description="Latitud del centro"),
-    lon: float = Query(..., description="Longitud del centro"),
-    dist_km: float = Query(10, ge=1, description="Radio en kilometros"),
-    min_mag: float = Query(0, ge=0),
-    max_mag: float = Query(10, le=10),
+    lat: float = Query(..., ge=-90, le=90, description="Latitud del centro"),
+    lon: float = Query(..., ge=-180, le=180, description="Longitud del centro"),
+    dist_km: float = Query(10, ge=1, le=20000, description="Radio en kilometros"),
+    min_mag: float = Query(0, ge=0, le=10),
+    max_mag: float = Query(10, ge=0, le=10),
     days_back: int = Query(30, ge=1),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -101,6 +110,7 @@ def earthquakes_in_radius(
     db: Session = Depends(get_db),
 ):
     """Buscar sismos en un radio geografico con PostGIS."""
+    validate_magnitude_range(min_mag, max_mag)
     filters = [
         "mag BETWEEN :min_mag AND :max_mag",
         *build_time_filter(all_time),
@@ -173,16 +183,25 @@ def earthquake_stats(db: Session = Depends(get_db)):
 
 @router.get("/earthquakes/analysis")
 def earthquake_analysis(
-    min_mag: float = Query(0, ge=0),
-    max_mag: float = Query(10, le=10),
+    min_mag: float = Query(0, ge=0, le=10),
+    max_mag: float = Query(10, ge=0, le=10),
     days_back: int = Query(30, ge=1),
     all_time: bool = Query(False, description="Consultar todo lo cargado"),
-    lat: float | None = Query(None),
-    lon: float | None = Query(None),
-    dist_km: float | None = Query(None, ge=1),
+    lat: float | None = Query(None, ge=-90, le=90),
+    lon: float | None = Query(None, ge=-180, le=180),
+    dist_km: float | None = Query(None, ge=1, le=20000),
     db: Session = Depends(get_db),
 ):
     """Resumen analitico agregado en PostGIS para evitar traer datos pesados al dashboard."""
+    validate_magnitude_range(min_mag, max_mag)
+    radius_values = (lat, lon, dist_km)
+    if any(value is not None for value in radius_values) and not all(
+        value is not None for value in radius_values
+    ):
+        raise HTTPException(
+            status_code=422,
+            detail="lat, lon y dist_km deben enviarse juntos",
+        )
     filters = [
         "mag BETWEEN :min_mag AND :max_mag",
         *build_time_filter(all_time),

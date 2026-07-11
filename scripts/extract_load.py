@@ -40,15 +40,20 @@ def extract_earthquakes(url: str | None = None) -> pd.DataFrame:
     for feature in data.get("features", []):
         props = feature.get("properties", {})
         geom = feature.get("geometry", {})
+        coordinates = geom.get("coordinates") if geom else None
 
         feature_id = feature.get("id")
+        event_time = props.get("time")
+        updated_time = props.get("updated") or event_time
+        if not feature_id or not event_time or not coordinates or len(coordinates) < 3:
+            continue
         rows.append({
             "id": feature_id,
             "usgs_id": feature_id,
             "mag": props.get("mag"),
             "place": props.get("place"),
-            "time": datetime.fromtimestamp(props.get("time", 0) / 1000, tz=timezone.utc),
-            "updated": datetime.fromtimestamp(props.get("updated", 0) / 1000, tz=timezone.utc),
+            "time": datetime.fromtimestamp(event_time / 1000, tz=timezone.utc),
+            "updated": datetime.fromtimestamp(updated_time / 1000, tz=timezone.utc),
             "tz": props.get("tz"),
             "url": props.get("url"),
             "detail": props.get("detail"),
@@ -70,9 +75,9 @@ def extract_earthquakes(url: str | None = None) -> pd.DataFrame:
             "gap": props.get("gap"),
             "magType": props.get("magType"),
             "geometry_type": geom.get("type") if geom else None,
-            "longitude": geom["coordinates"][0] if geom and geom.get("coordinates") else None,
-            "latitude": geom["coordinates"][1] if geom and geom.get("coordinates") else None,
-            "depth": geom["coordinates"][2] if geom and geom.get("coordinates") else None,
+            "longitude": coordinates[0],
+            "latitude": coordinates[1],
+            "depth": coordinates[2],
         })
 
     return pd.DataFrame(rows)

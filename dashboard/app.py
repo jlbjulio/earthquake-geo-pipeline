@@ -151,7 +151,7 @@ MAG_COLORS = {
 st.set_page_config(
     page_title="Monitor Sismico",
     layout="wide",
-    initial_sidebar_state="expanded",
+    initial_sidebar_state="auto",
 )
 
 st.markdown(
@@ -201,8 +201,13 @@ st.markdown(
     [data-testid="stMainMenu"],
     [data-testid="stMainMenu"] * {
         color: var(--ink) !important;
-        fill: var(--ink) !important;
-        stroke: var(--ink) !important;
+    }
+    header[data-testid="stHeader"] svg {
+        color: var(--ink) !important;
+    }
+    header[data-testid="stHeader"] svg path[fill="none"] {
+        fill: none !important;
+        stroke: none !important;
     }
     [data-testid="stToolbar"] button,
     [data-testid="stToolbar"] a,
@@ -933,7 +938,7 @@ def chart_base(chart):
     )
 
 
-@st.cache_data(ttl=60, show_spinner=False)
+@st.cache_data(ttl=120, show_spinner=False)
 def fetch_data(endpoint: str, params: tuple = ()) -> dict:
     query = dict(params)
     response = requests.get(
@@ -1034,6 +1039,109 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
     return fmap
 
 
+@st.fragment
+def render_events_tab(
+    use_radius,
+    lat,
+    lon,
+    dist_km,
+    min_mag,
+    max_mag,
+    days_back,
+    map_limit,
+    radius_params,
+):
+    """Renderiza y actualiza la tabla sin reconstruir el mapa completo."""
+    event_view = st.radio(
+        "Vista de la tabla",
+        list(EVENT_VIEW_OPTIONS.keys()),
+        horizontal=True,
+        key="event_view",
+    )
+    view_config = EVENT_VIEW_OPTIONS[event_view]
+    st.caption(view_config["caption"])
+
+    endpoint = "earthquakes/radius" if use_radius else "earthquakes"
+    if view_config["paged"]:
+        page_size = TABLE_PAGE_SIZE
+        table_signature = (
+            use_radius,
+            round(float(lat), 4),
+            round(float(lon), 4),
+            int(dist_km),
+            round(float(min_mag), 1),
+            round(float(max_mag), 1),
+            event_view,
+        )
+        if st.session_state.get("events_table_signature") != table_signature:
+            st.session_state.events_table_signature = table_signature
+            st.session_state.events_page = 1
+
+        page_number = max(int(st.session_state.get("events_page", 1)), 1)
+        table_params = build_event_params(
+            min_mag=min_mag,
+            max_mag=max_mag,
+            days_back=days_back,
+            use_all_time=True,
+            limit=page_size,
+            offset=(page_number - 1) * page_size,
+            sort=view_config["sort"],
+            radius_data=radius_params,
+        )
+        table_data, table_error = safe_fetch(endpoint, table_params)
+        table_rows = table_data.get("results", [])
+        table_total = int(table_data.get("total_count") or 0)
+        total_pages = max(1, ceil(max(table_total, 1) / page_size))
+
+        if page_number > total_pages:
+            page_number = total_pages
+            st.session_state.events_page = total_pages
+            table_params["offset"] = (page_number - 1) * page_size
+            table_data, table_error = safe_fetch(endpoint, table_params)
+            table_rows = table_data.get("results", [])
+
+        prev_col, page_col, next_col = st.columns([1, 1.35, 1])
+        prev_col.button(
+            "Pagina anterior",
+            width="stretch",
+            disabled=page_number <= 1,
+            on_click=change_events_page,
+            args=(-1,),
+        )
+        page_col.markdown(
+            f"<div class='table-note'><strong>Pagina {page_number:,} de {total_pages:,}</strong></div>",
+            unsafe_allow_html=True,
+        )
+        next_col.button(
+            "Siguiente pagina",
+            width="stretch",
+            disabled=page_number >= total_pages,
+            on_click=change_events_page,
+            args=(1,),
+        )
+
+        if table_error:
+            st.warning(f"No se pudo cargar la pagina de eventos: {table_error}")
+        render_events_table(table_rows)
+        return
+
+    table_params = build_event_params(
+        min_mag=min_mag,
+        max_mag=max_mag,
+        days_back=days_back,
+        use_all_time=False,
+        limit=map_limit,
+        offset=0,
+        sort=view_config["sort"],
+        radius_data=radius_params,
+    )
+    table_data, table_error = safe_fetch(endpoint, table_params)
+    table_rows = table_data.get("results", [])
+    if table_error:
+        st.warning(f"No se pudieron cargar eventos de tabla: {table_error}")
+    render_events_table(table_rows)
+
+
 with st.sidebar:
     st.header("Panel de control")
 
@@ -1113,7 +1221,7 @@ with st.sidebar:
         st.write("3. Ajusta la magnitud para ocultar eventos muy pequenos.")
         st.write("4. Eventos visibles en mapa no borra datos; solo hace mas rapido el mapa.")
         st.write("5. En Eventos puedes usar Todos los eventos para recorrer la base por paginas.")
-        st.write("6. El resumen tiene sus propios filtros dentro del tab Resumen.")
+        st.write("6. Mapa, Eventos y Resumen respetan los filtros del panel lateral.")
 
 st.markdown(
     """
@@ -1221,7 +1329,13 @@ with tab_map:
     left, right = st.columns([3, 1])
     with left:
         fmap = build_map(map_rows, use_radius, lat, lon, dist_km, map_style)
-        st_folium(fmap, width=None, height=570, key="main_map", use_container_width=True)
+        st_folium(
+            fmap,
+            width=None,
+            height=570,
+            key="main_map",
+            returned_objects=[],
+        )
     with right:
         st.subheader("Vista actual")
         st.metric("Sismos encontrados", format_number(total_found))
@@ -1244,95 +1358,17 @@ with tab_map:
             st.caption(format_time(strongest.get("time")))
 
 with tab_table:
-    event_view = st.radio(
-        "Vista de la tabla",
-        list(EVENT_VIEW_OPTIONS.keys()),
-        horizontal=True,
+    render_events_tab(
+        use_radius=use_radius,
+        lat=lat,
+        lon=lon,
+        dist_km=dist_km,
+        min_mag=min_mag,
+        max_mag=max_mag,
+        days_back=days_back,
+        map_limit=map_limit,
+        radius_params=radius_params,
     )
-    view_config = EVENT_VIEW_OPTIONS[event_view]
-    st.caption(EVENT_VIEW_OPTIONS[event_view]["caption"])
-
-    if view_config["paged"]:
-        table_use_all_time = True
-        page_size = TABLE_PAGE_SIZE
-        table_signature = (
-            use_radius,
-            round(float(lat), 4),
-            round(float(lon), 4),
-            int(dist_km),
-            round(float(min_mag), 1),
-            round(float(max_mag), 1),
-            event_view,
-        )
-        if st.session_state.get("events_table_signature") != table_signature:
-            st.session_state.events_table_signature = table_signature
-            st.session_state.events_page = 1
-
-        endpoint = "earthquakes/radius" if use_radius else "earthquakes"
-        page_number = max(int(st.session_state.get("events_page", 1)), 1)
-        table_params = build_event_params(
-            min_mag=min_mag,
-            max_mag=max_mag,
-            days_back=days_back,
-            use_all_time=table_use_all_time,
-            limit=page_size,
-            offset=(page_number - 1) * page_size,
-            sort=view_config["sort"],
-            radius_data=radius_params,
-        )
-        table_data, table_error = safe_fetch(endpoint, table_params)
-        table_rows = table_data.get("results", [])
-        table_total = int(table_data.get("total_count") or 0)
-        total_pages = max(1, ceil(max(table_total, 1) / page_size))
-        if page_number > total_pages:
-            st.session_state.events_page = total_pages
-            page_number = total_pages
-        st.session_state.events_page = page_number
-        page_number = st.session_state.events_page
-
-        prev_col, page_col, next_col = st.columns([1, 1.35, 1])
-        if prev_col.button(
-            "Pagina anterior",
-            width="stretch",
-            disabled=page_number <= 1,
-            on_click=change_events_page,
-            args=(-1,),
-        ):
-            pass
-        page_col.markdown(
-            f"<div class='table-note'><strong>Pagina {page_number:,} de {total_pages:,}</strong></div>",
-            unsafe_allow_html=True,
-        )
-        if next_col.button(
-            "Siguiente pagina",
-            width="stretch",
-            disabled=page_number >= total_pages,
-            on_click=change_events_page,
-            args=(1,),
-        ):
-            pass
-
-        if table_error:
-            st.warning(f"No se pudo cargar la pagina de eventos: {table_error}")
-        render_events_table(table_rows)
-    else:
-        table_params = build_event_params(
-            min_mag=min_mag,
-            max_mag=max_mag,
-            days_back=days_back,
-            use_all_time=False,
-            limit=map_limit,
-            offset=0,
-            sort=view_config["sort"],
-            radius_data=radius_params,
-        )
-        endpoint = "earthquakes/radius" if use_radius else "earthquakes"
-        table_data, table_error = safe_fetch(endpoint, table_params)
-        table_rows = table_data.get("results", [])
-        table_total = int(table_data.get("total_count") or total_found)
-        if table_error:
-            st.warning(f"No se pudieron cargar eventos de tabla: {table_error}")
-        render_events_table(table_rows)
 
 with tab_summary:
     analysis_data = overview_data
