@@ -217,6 +217,20 @@ class KeepWheelEventsInsideMap(MacroElement):
         """
     )
 
+
+class NonInteractiveSearchAreaPane(MacroElement):
+    """Capa visual para el radio y centro que nunca intercepta el mouse."""
+
+    _template = Template(
+        """
+        {% macro script(this, kwargs) %}
+        const searchAreaPane = {{ this._parent.get_name() }}.createPane('searchAreaPane');
+        searchAreaPane.style.zIndex = 350;
+        searchAreaPane.style.pointerEvents = 'none';
+        {% endmacro %}
+        """
+    )
+
 st.set_page_config(
     page_title="Monitor Sísmico",
     layout="wide",
@@ -1057,7 +1071,16 @@ def safe_fetch(endpoint: str, params: dict | None = None) -> tuple[dict, str | N
         return {"count": 0, "results": []}, str(err)
 
 
-def build_map(rows, use_radius, lat, lon, dist_km, map_style):
+def build_map(
+    rows,
+    use_radius,
+    lat,
+    lon,
+    dist_km,
+    map_style,
+    allow_map_recenter=False,
+    selected_event_id=None,
+):
     if use_radius:
         location = [lat, lon]
         if dist_km <= 25:
@@ -1100,6 +1123,7 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
     if use_radius:
         # La zona de búsqueda se dibuja primero y no recibe eventos del mouse;
         # así nunca tapa el hover o el clic de los sismos colocados encima.
+        NonInteractiveSearchAreaPane().add_to(fmap)
         folium.Circle(
             location=[lat, lon],
             radius=dist_km * 1000,
@@ -1108,12 +1132,14 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
             fill_opacity=0.05,
             weight=2,
             interactive=False,
-            bubbling_mouse_events=False,
+            bubbling_mouse_events=allow_map_recenter,
+            pane="searchAreaPane",
         ).add_to(fmap)
         folium.Marker(
             location=[lat, lon],
             icon=folium.Icon(color="blue", icon="crosshairs", prefix="fa"),
             interactive=False,
+            pane="searchAreaPane",
         ).add_to(fmap)
 
     for eq in rows:
@@ -1173,7 +1199,11 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
                 direction="top",
                 opacity=0.96,
             ),
-            popup=folium.Popup(popup_html, max_width=320),
+            popup=folium.Popup(
+                popup_html,
+                max_width=320,
+                show=usgs_id == selected_event_id,
+            ),
         ).add_to(fmap)
 
     return fmap
@@ -1525,19 +1555,45 @@ with tab_map:
                 "Haz clic en una zona vacía del mapa para usar ese punto como "
                 "centro de la búsqueda."
             )
-        fmap = build_map(map_rows, use_radius, lat, lon, dist_km, map_style)
+        fmap = build_map(
+            map_rows,
+            use_radius,
+            lat,
+            lon,
+            dist_km,
+            map_style,
+            allow_map_recenter=custom_map_selection,
+            selected_event_id=st.session_state.get("selected_map_event_id"),
+        )
         map_state = st_folium(
             fmap,
             width=None,
             height=570,
             key="main_map_custom" if custom_map_selection else "main_map",
-            returned_objects=["last_clicked"] if custom_map_selection else [],
+            returned_objects=["last_clicked", "last_object_clicked"]
+            if custom_map_selection
+            else [],
         )
         if custom_map_selection:
             clicked_coordinates = coordinates_from_map_click(
                 (map_state or {}).get("last_clicked")
             )
             if clicked_coordinates is not None:
+                object_coordinates = coordinates_from_map_click(
+                    (map_state or {}).get("last_object_clicked")
+                )
+                selected_event_id = None
+                if object_coordinates is not None:
+                    for row in map_rows:
+                        row_lat = float(row.get("latitude"))
+                        row_lon = float(row.get("longitude"))
+                        if (
+                            abs(row_lat - object_coordinates[0]) < 0.000001
+                            and abs(row_lon - object_coordinates[1]) < 0.000001
+                        ):
+                            selected_event_id = str(row.get("usgs_id") or "")
+                            break
+                st.session_state.selected_map_event_id = selected_event_id
                 click_signature = tuple(round(value, 7) for value in clicked_coordinates)
                 if st.session_state.get("last_custom_map_click") != click_signature:
                     st.session_state.last_custom_map_click = click_signature
