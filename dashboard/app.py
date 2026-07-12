@@ -1,12 +1,16 @@
 import os
+import unicodedata
 from html import escape
 from math import ceil, pi, sqrt
+from urllib.parse import quote
 
 import altair as alt
 import folium
 import pandas as pd
 import requests
 import streamlit as st
+from branca.element import MacroElement
+from jinja2 import Template
 from streamlit_folium import st_folium
 
 try:
@@ -19,7 +23,7 @@ API_PUBLIC_URL = os.getenv("API_PUBLIC_URL", API_BASE_URL).rstrip("/")
 
 EXTRA_LOCATION_PRESETS = {
     "Personalizado": {"lat": 8.9824, "lon": -79.5199, "radius": 600},
-    "Afganistan": {"lat": 33.9391, "lon": 67.7100, "radius": 900},
+    "Afganistán": {"lat": 33.9391, "lon": 67.7100, "radius": 900},
     "Alaska": {"lat": 64.2008, "lon": -149.4937, "radius": 1000},
     "Alemania": {"lat": 51.1657, "lon": 10.4515, "radius": 650},
     "Argentina": {"lat": -38.4161, "lon": -63.6167, "radius": 1400},
@@ -27,40 +31,40 @@ EXTRA_LOCATION_PRESETS = {
     "Bolivia": {"lat": -16.2902, "lon": -63.5887, "radius": 900},
     "Brasil": {"lat": -14.2350, "lon": -51.9253, "radius": 1800},
     "California": {"lat": 36.7783, "lon": -119.4179, "radius": 700},
-    "Canada": {"lat": 56.1304, "lon": -106.3468, "radius": 1800},
+    "Canadá": {"lat": 56.1304, "lon": -106.3468, "radius": 1800},
     "Chile": {"lat": -33.4489, "lon": -70.6693, "radius": 900},
     "China": {"lat": 35.8617, "lon": 104.1954, "radius": 1800},
     "Colombia": {"lat": 4.5709, "lon": -74.2973, "radius": 850},
     "Costa Rica": {"lat": 9.7489, "lon": -83.7534, "radius": 500},
     "Ecuador": {"lat": -1.8312, "lon": -78.1834, "radius": 650},
     "El Salvador": {"lat": 13.7942, "lon": -88.8965, "radius": 450},
-    "Espana": {"lat": 40.4637, "lon": -3.7492, "radius": 750},
+    "España": {"lat": 40.4637, "lon": -3.7492, "radius": 750},
     "Estados Unidos": {"lat": 39.8283, "lon": -98.5795, "radius": 2000},
     "Filipinas": {"lat": 12.8797, "lon": 121.7740, "radius": 900},
     "Francia": {"lat": 46.2276, "lon": 2.2137, "radius": 750},
     "Grecia": {"lat": 39.0742, "lon": 21.8243, "radius": 650},
     "Guatemala": {"lat": 15.7835, "lon": -90.2308, "radius": 550},
-    "Haiti": {"lat": 18.9712, "lon": -72.2852, "radius": 450},
+    "Haití": {"lat": 18.9712, "lon": -72.2852, "radius": 450},
     "Honduras": {"lat": 15.2000, "lon": -86.2419, "radius": 550},
     "India": {"lat": 20.5937, "lon": 78.9629, "radius": 1700},
     "Indonesia": {"lat": -0.7893, "lon": 113.9213, "radius": 1700},
-    "Iran": {"lat": 32.4279, "lon": 53.6880, "radius": 1100},
+    "Irán": {"lat": 32.4279, "lon": 53.6880, "radius": 1100},
     "Italia": {"lat": 41.8719, "lon": 12.5674, "radius": 650},
     "Jamaica": {"lat": 18.1096, "lon": -77.2975, "radius": 350},
-    "Japon": {"lat": 38.5000, "lon": 142.0000, "radius": 900},
-    "Mexico": {"lat": 19.4326, "lon": -99.1332, "radius": 900},
+    "Japón": {"lat": 38.5000, "lon": 142.0000, "radius": 900},
+    "México": {"lat": 19.4326, "lon": -99.1332, "radius": 900},
     "Nepal": {"lat": 28.3949, "lon": 84.1240, "radius": 650},
     "Nicaragua": {"lat": 12.8654, "lon": -85.2072, "radius": 500},
     "Nueva Zelanda": {"lat": -40.9006, "lon": 174.8860, "radius": 850},
     "Pakistan": {"lat": 30.3753, "lon": 69.3451, "radius": 1000},
-    "Panama": {"lat": 8.9824, "lon": -79.5199, "radius": 600},
+    "Panamá": {"lat": 8.9824, "lon": -79.5199, "radius": 600},
     "Papua Nueva Guinea": {"lat": -6.3150, "lon": 143.9555, "radius": 900},
-    "Peru": {"lat": -9.1900, "lon": -75.0152, "radius": 950},
+    "Perú": {"lat": -9.1900, "lon": -75.0152, "radius": 950},
     "Puerto Rico": {"lat": 18.2208, "lon": -66.5901, "radius": 350},
-    "Republica Dominicana": {"lat": 18.7357, "lon": -70.1627, "radius": 350},
+    "República Dominicana": {"lat": 18.7357, "lon": -70.1627, "radius": 350},
     "Rusia": {"lat": 61.5240, "lon": 105.3188, "radius": 2200},
-    "Taiwan": {"lat": 23.6978, "lon": 120.9605, "radius": 450},
-    "Turquia": {"lat": 38.9637, "lon": 35.2433, "radius": 900},
+    "Taiwán": {"lat": 23.6978, "lon": 120.9605, "radius": 450},
+    "Turquía": {"lat": 38.9637, "lon": 35.2433, "radius": 900},
     "Venezuela": {"lat": 6.4238, "lon": -66.5897, "radius": 900},
 }
 
@@ -80,10 +84,10 @@ MAP_STYLES = {
 }
 
 EVENT_VIEW_OPTIONS = {
-    "Mas recientes": {
+    "Más recientes": {
         "sort": "recent",
         "paged": False,
-        "caption": "Ordena por fecha UTC, del evento mas nuevo al mas antiguo.",
+        "caption": "Ordena por fecha UTC, del evento más nuevo al más antiguo.",
     },
     "Mayor magnitud primero": {
         "sort": "mag_desc",
@@ -98,7 +102,7 @@ EVENT_VIEW_OPTIONS = {
     "Todos los eventos": {
         "sort": "recent",
         "paged": True,
-        "caption": "Recorre todo lo cargado en la base por paginas; respeta magnitud y zona seleccionada.",
+        "caption": "Recorre todo lo cargado en la base por páginas; respeta magnitud y zona seleccionada.",
     },
 }
 
@@ -115,25 +119,52 @@ def estimate_country_radius(area):
     return int(max(250, min(2500, sqrt(area / pi) * 1.35)))
 
 
+def normalize_location_name(name):
+    """Crea una clave comparable ignorando tildes, mayúsculas y espacios repetidos."""
+    text = unicodedata.normalize("NFKD", str(name or ""))
+    text = "".join(character for character in text if not unicodedata.combining(character))
+    return " ".join(text.casefold().split())
+
+
+def coordinates_from_map_click(last_clicked):
+    """Valida y extrae coordenadas entregadas por Leaflet al hacer clic."""
+    if not isinstance(last_clicked, dict):
+        return None
+    try:
+        latitude = float(last_clicked["lat"])
+        longitude = float(last_clicked["lng"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+        return None
+    return latitude, longitude
+
+
 def build_location_presets():
     presets = dict(EXTRA_LOCATION_PRESETS)
+    canonical_names = {
+        normalize_location_name(name)
+        for name in presets
+    }
     if CountryInfo is not None:
         try:
             for name, info in CountryInfo.all().items():
                 latlng = info.get("latlng") or []
-                if len(latlng) >= 2 and name not in presets:
+                canonical_name = normalize_location_name(name)
+                if len(latlng) >= 2 and canonical_name not in canonical_names:
                     presets[name] = {
                         "lat": float(latlng[0]),
                         "lon": float(latlng[1]),
                         "radius": estimate_country_radius(info.get("area")),
                     }
+                    canonical_names.add(canonical_name)
         except Exception:
             pass
 
     first = {"Personalizado": presets["Personalizado"]}
     rest = {
         name: presets[name]
-        for name in sorted(presets)
+        for name in sorted(presets, key=normalize_location_name)
         if name != "Personalizado"
     }
     return {**first, **rest}
@@ -148,8 +179,25 @@ MAG_COLORS = {
     "severe": "#b42318",
 }
 
+
+class KeepWheelEventsInsideMap(MacroElement):
+    """Evita que la rueda sobre Leaflet desplace la página de Streamlit."""
+
+    _template = Template(
+        """
+        {% macro script(this, kwargs) %}
+        const mapContainer = {{ this._parent.get_name() }}.getContainer();
+        L.DomEvent.disableScrollPropagation(mapContainer);
+        mapContainer.addEventListener('wheel', function(event) {
+            event.preventDefault();
+            event.stopPropagation();
+        }, { passive: false });
+        {% endmacro %}
+        """
+    )
+
 st.set_page_config(
-    page_title="Monitor Sismico",
+    page_title="Monitor Sísmico",
     layout="wide",
     initial_sidebar_state="auto",
 )
@@ -288,6 +336,37 @@ st.markdown(
         font-weight: 400 !important;
         letter-spacing: 0 !important;
         line-height: 1.35 !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepDown"],
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepUp"] {
+        background: #f0d9c7 !important;
+        color: #24150f !important;
+        border-color: #b98b72 !important;
+        opacity: 1 !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepDown"]:hover,
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepUp"]:hover {
+        background: #dfbfa8 !important;
+        color: #24150f !important;
+        border-color: #7a3f2a !important;
+    }
+    section[data-testid="stSidebar"] [data-testid="stNumberInputIcon"],
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepDown"] svg,
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepUp"] svg,
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepDown"] svg *,
+    section[data-testid="stSidebar"] [data-testid="stNumberInputStepUp"] svg * {
+        color: #24150f !important;
+        fill: #24150f !important;
+        stroke: #24150f !important;
+        opacity: 1 !important;
+    }
+    section[data-testid="stSidebar"] input[type="number"] {
+        color-scheme: light !important;
+    }
+    section[data-testid="stSidebar"] input[type="number"]::-webkit-inner-spin-button,
+    section[data-testid="stSidebar"] input[type="number"]::-webkit-outer-spin-button {
+        filter: brightness(0.25) !important;
+        opacity: 1 !important;
     }
     section[data-testid="stSidebar"] [data-testid="stCaptionContainer"],
     section[data-testid="stSidebar"] [data-testid="stCaptionContainer"] * {
@@ -738,7 +817,7 @@ def format_time(value):
 
 
 def format_period_label(use_all_time, days_back):
-    return "Todo lo cargado" if use_all_time else f"Ultimos {days_back} dias"
+    return "Todo lo cargado" if use_all_time else f"Últimos {days_back} días"
 
 
 def magnitude_color(mag):
@@ -815,8 +894,8 @@ def render_events_table(rows):
     df["Fecha UTC"] = df["time"].dt.strftime("%Y-%m-%d")
     df["Hora UTC"] = df["time"].dt.strftime("%H:%M")
     df["Mes UTC"] = df["time"].dt.strftime("%Y-%m")
-    df["Ano UTC"] = df["time"].dt.strftime("%Y")
-    df["Categoria"] = df["mag"].apply(magnitude_label)
+    df["Año UTC"] = df["time"].dt.strftime("%Y")
+    df["Categoría"] = df["mag"].apply(magnitude_label)
     if "distance_km" in df.columns:
         df["Distancia km"] = df["distance_km"]
 
@@ -833,12 +912,12 @@ def render_events_table(rows):
     df = df.rename(columns=rename_map)
     columns = [
         "Magnitud",
-        "Categoria",
+        "Categoría",
         "Lugar",
         "Fecha UTC",
         "Hora UTC",
         "Mes UTC",
-        "Ano UTC",
+        "Año UTC",
         "Profundidad km",
         "Latitud",
         "Longitud",
@@ -867,7 +946,7 @@ def render_events_table(rows):
 
 def region_from_place(place):
     if not place:
-        return "Sin ubicacion"
+        return "Sin ubicación"
     text = str(place).strip()
     if "," in text:
         return text.split(",")[-1].strip() or text
@@ -884,14 +963,14 @@ def prepare_analysis_frame(rows):
     df = df.dropna(subset=["mag"])
     bins = [-10, 2, 4, 6, 10]
     labels = ["Micro", "Leve", "Fuerte", "Severo"]
-    df["Categoria"] = pd.cut(
+    df["Categoría"] = pd.cut(
         df["mag"],
         bins=bins,
         labels=labels,
         include_lowest=True,
     ).astype(str)
-    df["Region"] = df["place"].fillna("Sin ubicacion").apply(region_from_place)
-    df["Dia"] = df["time"].dt.strftime("%Y-%m-%d")
+    df["Región"] = df["place"].fillna("Sin ubicación").apply(region_from_place)
+    df["Día"] = df["time"].dt.strftime("%Y-%m-%d")
     return df
 
 
@@ -901,7 +980,7 @@ def insight_text(counts, total):
     severe = int(counts.get("Severo", 0))
     strong = int(counts.get("Fuerte", 0))
     if severe:
-        return "Hay eventos severos en el analisis; conviene revisar detalle y ubicacion."
+        return "Hay eventos severos en el análisis; conviene revisar detalle y ubicación."
     if strong:
         return "Predominan eventos no severos, pero existen sismos fuertes relevantes."
     return "La actividad seleccionada se concentra en magnitudes micro o leves."
@@ -973,8 +1052,10 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
         tiles=None,
         control_scale=True,
         prefer_canvas=True,
+        scroll_wheel_zoom=True,
         zoom_control=False,
     )
+    KeepWheelEventsInsideMap().add_to(fmap)
     style = MAP_STYLES.get(map_style, MAP_STYLES["Claro detallado"])
     folium.TileLayer(
         tiles=style["tiles"],
@@ -987,7 +1068,10 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
         mag = float(eq.get("mag") or 0)
         color = magnitude_color(mag)
         radius = max(4, min(6 + mag * 2.2, 24))
-        detail_url = f"{API_PUBLIC_URL}/api/v1/earthquakes/{eq['usgs_id']}"
+        usgs_id = str(eq.get("usgs_id") or "")
+        detail_url = f"{API_PUBLIC_URL}/api/v1/earthquakes/{quote(usgs_id, safe='')}"
+        place_label = escape(str(eq.get("place") or "Sin ubicación"))
+        depth_label = format_number(eq.get("depth"))
         parsed_time = pd.to_datetime(eq.get("time"), errors="coerce", utc=True)
         if pd.isna(parsed_time):
             date_label = "--"
@@ -999,15 +1083,29 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
             hour_label = parsed_time.strftime("%H:%M UTC")
             month_label = parsed_time.strftime("%Y-%m")
             year_label = parsed_time.strftime("%Y")
+        distance_html = ""
+        if eq.get("distance_km") is not None:
+            distance_html = f"Distancia: {format_number(eq.get('distance_km'))} km<br>"
+
+        tooltip_html = (
+            "<div style='min-width:190px'>"
+            f"<strong>{place_label}</strong><br>"
+            f"Magnitud: <strong>M {mag:.1f}</strong><br>"
+            f"Profundidad: {depth_label} km<br>"
+            f"Fecha: {date_label} · {hour_label}"
+            "</div>"
+        )
         popup_html = (
-            f"<b>{eq.get('place', 'Unknown')}</b><br>"
-            f"Magnitud: {mag}<br>"
-            f"Categoria: {magnitude_label(mag)}<br>"
-            f"Profundidad: {eq.get('depth', 'N/A')} km<br>"
+            f"<b>{place_label}</b><br>"
+            f"ID USGS: {escape(usgs_id)}<br>"
+            f"Magnitud: {mag:.1f}<br>"
+            f"Categoría: {magnitude_label(mag)}<br>"
+            f"Profundidad: {depth_label} km<br>"
+            f"{distance_html}"
             f"Fecha UTC: {date_label}<br>"
             f"Hora UTC: {hour_label}<br>"
-            f"Mes/Ano: {month_label} / {year_label}<br>"
-            f"<a href='{detail_url}' target='_blank'>Ver detalle API</a>"
+            f"Mes/Año: {month_label} / {year_label}<br>"
+            f"<a href='{escape(detail_url, quote=True)}' target='_blank' rel='noopener'>Ver detalle API</a>"
         )
 
         folium.CircleMarker(
@@ -1018,13 +1116,20 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
             fill=True,
             fill_color=color,
             fill_opacity=0.72,
+            bubbling_mouse_events=False,
+            tooltip=folium.Tooltip(
+                tooltip_html,
+                sticky=True,
+                direction="top",
+                opacity=0.96,
+            ),
             popup=folium.Popup(popup_html, max_width=320),
         ).add_to(fmap)
 
     if use_radius:
         folium.Marker(
             location=[lat, lon],
-            tooltip="Centro de busqueda",
+            tooltip="Centro de búsqueda",
             icon=folium.Icon(color="blue", icon="crosshairs", prefix="fa"),
         ).add_to(fmap)
         folium.Circle(
@@ -1037,6 +1142,10 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
         ).add_to(fmap)
 
     return fmap
+
+
+def mark_custom_coordinates_as_manual():
+    st.session_state.custom_coordinate_source = "manual"
 
 
 @st.fragment
@@ -1102,18 +1211,18 @@ def render_events_tab(
 
         prev_col, page_col, next_col = st.columns([1, 1.35, 1])
         prev_col.button(
-            "Pagina anterior",
+            "Página anterior",
             width="stretch",
             disabled=page_number <= 1,
             on_click=change_events_page,
             args=(-1,),
         )
         page_col.markdown(
-            f"<div class='table-note'><strong>Pagina {page_number:,} de {total_pages:,}</strong></div>",
+            f"<div class='table-note'><strong>Página {page_number:,} de {total_pages:,}</strong></div>",
             unsafe_allow_html=True,
         )
         next_col.button(
-            "Siguiente pagina",
+            "Siguiente página",
             width="stretch",
             disabled=page_number >= total_pages,
             on_click=change_events_page,
@@ -1121,7 +1230,7 @@ def render_events_tab(
         )
 
         if table_error:
-            st.warning(f"No se pudo cargar la pagina de eventos: {table_error}")
+            st.warning(f"No se pudo cargar la página de eventos: {table_error}")
         render_events_table(table_rows)
         return
 
@@ -1142,11 +1251,22 @@ def render_events_tab(
     render_events_table(table_rows)
 
 
+pending_custom_coordinates = st.session_state.pop("pending_custom_coordinates", None)
+if pending_custom_coordinates is not None:
+    st.session_state.custom_lat = pending_custom_coordinates[0]
+    st.session_state.custom_lon = pending_custom_coordinates[1]
+
+if "custom_lat" not in st.session_state:
+    st.session_state.custom_lat = EXTRA_LOCATION_PRESETS["Personalizado"]["lat"]
+if "custom_lon" not in st.session_state:
+    st.session_state.custom_lon = EXTRA_LOCATION_PRESETS["Personalizado"]["lon"]
+
+preset = None
 with st.sidebar:
     st.header("Panel de control")
 
     view_mode = st.radio(
-        "Que quieres explorar?",
+        "¿Qué quieres explorar?",
         ["Eventos recientes", "Cerca de una zona"],
         horizontal=True,
         key="view_mode",
@@ -1163,12 +1283,12 @@ with st.sidebar:
     )
 
     time_range = st.selectbox(
-        "Periodo a consultar",
-        ["Ultimas 24 horas", "7 dias", "30 dias", "1 Año", "10 años"],
+        "Período a consultar",
+        ["Últimas 24 horas", "7 días", "30 días", "1 año", "10 años"],
         index=1,
         key="time_range",
     )
-    days_back = {"Ultimas 24 horas": 1, "7 dias": 7, "30 dias": 30, "1 Año": 365, "10 años": 3650}[time_range]
+    days_back = {"Últimas 24 horas": 1, "7 días": 7, "30 días": 30, "1 año": 365, "10 años": 3650}[time_range]
 
     map_limit = st.slider(
         "Eventos visibles en mapa",
@@ -1178,33 +1298,51 @@ with st.sidebar:
         step=50,
         key="map_limit",
     )
-    st.caption("Solo limita cuantos puntos se dibujan para que el mapa cargue rapido. La tabla puede recorrer todos por paginas.")
+    st.caption("Solo limita cuántos puntos se dibujan para que el mapa cargue rápido. La tabla puede recorrer todos por páginas.")
 
-    lat = LOCATION_PRESETS["Panama"]["lat"]
-    lon = LOCATION_PRESETS["Panama"]["lon"]
-    dist_km = LOCATION_PRESETS["Panama"]["radius"]
+    lat = LOCATION_PRESETS["Panamá"]["lat"]
+    lon = LOCATION_PRESETS["Panamá"]["lon"]
+    dist_km = LOCATION_PRESETS["Panamá"]["radius"]
 
     st.divider()
     if use_radius:
         st.subheader("Buscar cerca de")
         preset = st.selectbox(
-            "Pais o zona",
+            "País o zona",
             list(LOCATION_PRESETS.keys()),
-            help="Puedes escribir dentro del selector para encontrar rapido un pais.",
+            help="Puedes escribir dentro del selector para encontrar rápido un país.",
         )
         preset_data = LOCATION_PRESETS[preset]
 
         if preset == "Personalizado":
-            lat = st.number_input("Latitud", value=preset_data["lat"], format="%.4f")
-            lon = st.number_input("Longitud", value=preset_data["lon"], format="%.4f")
+            lat = st.number_input(
+                "Latitud",
+                min_value=-90.0,
+                max_value=90.0,
+                step=0.0001,
+                format="%.4f",
+                key="custom_lat",
+                on_change=mark_custom_coordinates_as_manual,
+            )
+            lon = st.number_input(
+                "Longitud",
+                min_value=-180.0,
+                max_value=180.0,
+                step=0.0001,
+                format="%.4f",
+                key="custom_lon",
+                on_change=mark_custom_coordinates_as_manual,
+            )
             dist_km = st.slider("Distancia alrededor", 10, 2000, preset_data["radius"], step=10)
+            if st.session_state.get("custom_coordinate_source") == "map":
+                st.caption("Coordenadas seleccionadas directamente en el mapa.")
         else:
             lat = preset_data["lat"]
             lon = preset_data["lon"]
             dist_km = st.slider("Distancia alrededor", 10, 2000, preset_data["radius"], step=10)
-        st.caption("Escribe en el selector para buscar un pais. Si no aparece, usa Personalizado y coloca coordenadas.")
+        st.caption("Escribe en el selector para buscar un país. Si no aparece, usa Personalizado y coloca coordenadas.")
     else:
-        st.caption("Eventos recientes muestra sismos globales. Usa Cerca de una zona para buscar por ubicacion.")
+        st.caption("Eventos recientes muestra sismos globales. Usa Cerca de una zona para buscar por ubicación.")
 
     st.divider()
     map_style = st.selectbox(
@@ -1217,17 +1355,17 @@ with st.sidebar:
 
     with st.expander("Guia rapida"):
         st.write("1. Usa Eventos recientes para ver sismos globales.")
-        st.write("2. Usa Cerca de una zona para buscar alrededor de un pais o escribir sus coordenadas.")
-        st.write("3. Ajusta la magnitud para ocultar eventos muy pequenos.")
-        st.write("4. Eventos visibles en mapa no borra datos; solo hace mas rapido el mapa.")
-        st.write("5. En Eventos puedes usar Todos los eventos para recorrer la base por paginas.")
+        st.write("2. Usa Cerca de una zona para buscar alrededor de un país o escribir sus coordenadas.")
+        st.write("3. Ajusta la magnitud para ocultar eventos muy pequeños.")
+        st.write("4. Eventos visibles en mapa no borra datos; solo hace más rápido el mapa.")
+        st.write("5. En Eventos puedes usar Todos los eventos para recorrer la base por páginas.")
         st.write("6. Mapa, Eventos y Resumen respetan los filtros del panel lateral.")
 
 st.markdown(
     """
     <div class="hero">
-        <h1>Monitor Sismico Global</h1>
-        <p>Explora terremotos recientes, filtra por magnitud y busca actividad sismica cerca de una zona.</p>
+        <h1>Monitor Sísmico Global</h1>
+        <p>Explora terremotos recientes, filtra por magnitud y busca actividad sísmica cerca de una zona.</p>
     </div>
     """,
     unsafe_allow_html=True,
@@ -1245,7 +1383,7 @@ st.markdown(
     f"""
     <div class="info-strip">
         {status_html}
-        <span><strong>Ultima actualizacion:</strong> {format_time(stats.get("last_update"))}</span>
+        <span><strong>Última actualización:</strong> {format_time(stats.get("last_update"))}</span>
     </div>
     """,
     unsafe_allow_html=True,
@@ -1302,7 +1440,7 @@ metric_cols[3].metric(
     format_number(overview_summary.get("max_magnitude")),
 )
 st.caption(
-    f"Periodo: {time_range}. "
+    f"Período: {time_range}. "
     f"El mapa dibuja hasta {map_limit:,} puntos."
 )
 st.caption(
@@ -1328,25 +1466,42 @@ with tab_map:
     )
     left, right = st.columns([3, 1])
     with left:
+        custom_map_selection = use_radius and preset == "Personalizado"
+        if custom_map_selection:
+            st.info(
+                "Haz clic en una zona vacía del mapa para usar ese punto como "
+                "centro de la búsqueda. Los círculos de sismos conservan su clic para ver detalles."
+            )
         fmap = build_map(map_rows, use_radius, lat, lon, dist_km, map_style)
-        st_folium(
+        map_state = st_folium(
             fmap,
             width=None,
             height=570,
-            key="main_map",
-            returned_objects=[],
+            key="main_map_custom" if custom_map_selection else "main_map",
+            returned_objects=["last_clicked"] if custom_map_selection else [],
         )
+        if custom_map_selection:
+            clicked_coordinates = coordinates_from_map_click(
+                (map_state or {}).get("last_clicked")
+            )
+            if clicked_coordinates is not None:
+                click_signature = tuple(round(value, 7) for value in clicked_coordinates)
+                if st.session_state.get("last_custom_map_click") != click_signature:
+                    st.session_state.last_custom_map_click = click_signature
+                    st.session_state.pending_custom_coordinates = clicked_coordinates
+                    st.session_state.custom_coordinate_source = "map"
+                    st.rerun()
     with right:
         st.subheader("Vista actual")
         st.metric("Sismos encontrados", format_number(total_found))
         st.metric("Puntos en mapa", format_number(len(map_rows)))
         st.metric("Magnitud", f"{min_mag:.1f} - {max_mag:.1f}")
-        st.caption(f"Periodo: {time_range}")
+        st.caption(f"Período: {time_range}")
         if use_radius:
             st.metric("Distancia", f"{dist_km:,} km")
             st.caption(f"Centro: {lat:.2f}, {lon:.2f}")
         else:
-            st.caption("Consulta global sin radio geografico.")
+            st.caption("Consulta global sin radio geográfico.")
 
         if map_rows:
             strongest = max(map_rows, key=lambda item: float(item.get("mag") or 0))
@@ -1397,7 +1552,7 @@ with tab_summary:
         st.markdown(
             """
             <div class="analysis-title">
-                <h2>Analisis de actividad sismica</h2>
+                <h2>Análisis de actividad sísmica</h2>
                 <p>Resumen agregado de todos los eventos que cumplen los filtros actuales.</p>
             </div>
             """,
@@ -1412,17 +1567,17 @@ with tab_summary:
                 f"{total_analyzed:,} eventos analizados",
             ),
             (
-                "Categoria dominante",
+                "Categoría dominante",
                 dominant_category,
-                f"{int(counts.get(dominant_category, 0)):,} eventos en esta categoria",
+                f"{int(counts.get(dominant_category, 0)):,} eventos en esta categoría",
             ),
             (
                 "Evento mayor",
                 f"M {format_number(strongest.get('mag'))}",
-                escape(str(strongest.get("place", "Sin ubicacion"))),
+                escape(str(strongest.get("place", "Sin ubicación"))),
             ),
             (
-                "Zona mas repetida",
+                "Zona más repetida",
                 escape(str(active_region)),
                 "Aparece con mayor frecuencia en los eventos del resumen",
             ),
@@ -1443,14 +1598,14 @@ with tab_summary:
             """
             <div class="section-band">
                 <h3>Comportamiento general</h3>
-                <p>Estas graficas resumen intensidad, zonas frecuentes y profundidad sin cargar todos los registros en pantalla.</p>
+                <p>Estas gráficas resumen intensidad, zonas frecuentes y profundidad sin cargar todos los registros en pantalla.</p>
             </div>
             """,
             unsafe_allow_html=True,
         )
 
         region_df = pd.DataFrame(top_regions).rename(
-            columns={"region": "Region", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+            columns={"region": "Región", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
         )
         depth_df = pd.DataFrame(analysis_data.get("depth_groups") or []).rename(
             columns={"depth_group": "Profundidad", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
@@ -1459,7 +1614,7 @@ with tab_summary:
         left_chart, right_chart = st.columns([1.05, 1])
         with left_chart:
             dist_df = counts_series.reset_index()
-            dist_df.columns = ["Categoria", "Eventos"]
+            dist_df.columns = ["Categoría", "Eventos"]
             dist_chart = alt.Chart(dist_df).mark_bar(
                 cornerRadiusEnd=5,
                 size=26,
@@ -1469,16 +1624,16 @@ with tab_summary:
                     title="Eventos",
                     axis=alt.Axis(tickCount=5, format=",.0f"),
                 ),
-                y=alt.Y("Categoria:N", sort=labels, title=None),
+                y=alt.Y("Categoría:N", sort=labels, title=None),
                 color=alt.Color(
-                    "Categoria:N",
+                    "Categoría:N",
                     scale=alt.Scale(domain=labels, range=color_range),
                     legend=None,
                 ),
-                tooltip=["Categoria", "Eventos"],
+                tooltip=["Categoría", "Eventos"],
             ).properties(
                 height=240,
-                title="Distribucion por magnitud",
+                title="Distribución por magnitud",
             )
             st.altair_chart(chart_base(dist_chart), width="stretch", theme=None)
 
@@ -1493,11 +1648,11 @@ with tab_summary:
                         title="Eventos",
                         axis=alt.Axis(tickCount=5, format=",.0f"),
                     ),
-                    y=alt.Y("Region:N", sort="-x", title=None),
-                    tooltip=["Region", "Eventos", "Magnitud prom."],
+                    y=alt.Y("Región:N", sort="-x", title=None),
+                    tooltip=["Región", "Eventos", "Magnitud prom."],
                 ).properties(
                     height=240,
-                    title="Zonas mas frecuentes",
+                    title="Zonas más frecuentes",
                 )
                 st.altair_chart(chart_base(region_chart), width="stretch", theme=None)
             else:
@@ -1533,13 +1688,13 @@ with tab_summary:
             columns={"period": "Mes", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
         )
         yearly_df = pd.DataFrame(analysis_data.get("yearly_counts") or []).rename(
-            columns={"period": "Ano", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+            columns={"period": "Año", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
         )
         st.markdown(
             """
             <div class="section-band">
                 <h3>Actividad en el tiempo</h3>
-                <p>Conteo de eventos por dia, mes y ano para entender cuando se concentra la actividad seleccionada.</p>
+                <p>Conteo de eventos por día, mes y año para entender cuándo se concentra la actividad seleccionada.</p>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1551,20 +1706,20 @@ with tab_summary:
                 cornerRadiusTopLeft=3,
                 cornerRadiusTopRight=3,
             ).encode(
-                x=alt.X("Fecha:T", title="Dia UTC", axis=alt.Axis(format="%d %b", labelAngle=-35)),
+                x=alt.X("Fecha:T", title="Día UTC", axis=alt.Axis(format="%d %b", labelAngle=-35)),
                 y=alt.Y(
                     "Eventos:Q",
                     title="Cantidad de eventos",
                     axis=alt.Axis(tickCount=5, format=",.0f"),
                 ),
                 tooltip=[
-                    alt.Tooltip("Fecha:T", title="Dia", format="%Y-%m-%d"),
+                    alt.Tooltip("Fecha:T", title="Día", format="%Y-%m-%d"),
                     "Eventos",
                     "Magnitud prom.",
                 ],
             ).properties(
                 height=260,
-                title="Eventos por dia",
+                title="Eventos por día",
             )
             st.altair_chart(chart_base(daily_chart), width="stretch", theme=None)
 
@@ -1593,16 +1748,16 @@ with tab_summary:
                     color="#2f855a",
                     cornerRadiusEnd=5,
                 ).encode(
-                    x=alt.X("Ano:N", title="Ano UTC", sort=None),
+                    x=alt.X("Año:N", title="Año UTC", sort=None),
                     y=alt.Y(
                         "Eventos:Q",
                         title="Cantidad",
                         axis=alt.Axis(tickCount=5, format=",.0f"),
                     ),
-                    tooltip=["Ano", "Eventos", "Magnitud prom."],
+                    tooltip=["Año", "Eventos", "Magnitud prom."],
                 ).properties(
                     height=210,
-                    title="Eventos por ano",
+                    title="Eventos por año",
                 )
                 st.altair_chart(chart_base(yearly_chart), width="stretch", theme=None)
 
@@ -1616,7 +1771,7 @@ with tab_summary:
             unsafe_allow_html=True,
         )
         for event in strongest_events:
-            place = escape(str(event.get("place", "Sin ubicacion")))
+            place = escape(str(event.get("place", "Sin ubicación")))
             category = escape(magnitude_label(event.get("mag")))
             event_time = format_time(event.get("time"))
             depth = format_number(event.get("depth"))

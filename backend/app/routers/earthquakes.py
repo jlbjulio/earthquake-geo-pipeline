@@ -33,7 +33,7 @@ def validate_magnitude_range(min_mag: float, max_mag: float) -> None:
     if min_mag > max_mag:
         raise HTTPException(
             status_code=422,
-            detail="La magnitud minima no puede ser mayor que la maxima",
+            detail="La magnitud mínima no puede ser mayor que la máxima",
         )
 
 
@@ -44,11 +44,11 @@ def health_check():
 
 @router.get("/earthquakes")
 def list_earthquakes(
-    min_mag: float = Query(0, ge=0, le=10, description="Magnitud minima"),
-    max_mag: float = Query(10, ge=0, le=10, description="Magnitud maxima"),
+    min_mag: float = Query(0, ge=0, le=10, description="Magnitud mínima"),
+    max_mag: float = Query(10, ge=0, le=10, description="Magnitud máxima"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
-    days_back: int = Query(7, ge=1, description="Dias hacia atras"),
+    days_back: int = Query(7, ge=1, description="Días hacia atrás"),
     all_time: bool = Query(False, description="Consultar todo lo cargado"),
     sort: str = Query("recent", description="recent, mag_desc o mag_asc"),
     db: Session = Depends(get_db),
@@ -109,7 +109,7 @@ def earthquakes_in_radius(
     sort: str = Query("distance", description="distance, recent, mag_desc o mag_asc"),
     db: Session = Depends(get_db),
 ):
-    """Buscar sismos en un radio geografico con PostGIS."""
+    """Buscar sismos en un radio geográfico con PostGIS."""
     validate_magnitude_range(min_mag, max_mag)
     filters = [
         "mag BETWEEN :min_mag AND :max_mag",
@@ -174,7 +174,7 @@ def earthquakes_in_radius(
 
 @router.get("/earthquakes/stats")
 def earthquake_stats(db: Session = Depends(get_db)):
-    """Resumen estadistico de todos los sismos."""
+    """Resumen estadístico de todos los sismos."""
     sql = text("SELECT * FROM get_earthquake_summary()")
     result = db.execute(sql)
     row = result.mappings().first()
@@ -240,7 +240,7 @@ def earthquake_analysis(
                     ELSE 'Severo'
                 END AS category,
                 CASE
-                    WHEN place IS NULL OR TRIM(place) = '' THEN 'Sin ubicacion'
+                    WHEN place IS NULL OR TRIM(place) = '' THEN 'Sin ubicación'
                     WHEN place LIKE '%,%' THEN TRIM(REGEXP_REPLACE(place, '^.*,\\s*', ''))
                     WHEN POSITION(' of ' IN place) > 0 THEN TRIM(REGEXP_REPLACE(place, '^.* of\\s+', ''))
                     ELSE place
@@ -370,7 +370,7 @@ def earthquake_clusters(
     radius_km: float = Query(50, ge=10, description="Radio de agrupacion en km"),
     db: Session = Depends(get_db),
 ):
-    """Agrupar sismos por proximidad geografica (DBSCAN)."""
+    """Agrupar sismos por proximidad geográfica (DBSCAN)."""
     sql = text("SELECT * FROM get_earthquake_clusters(:radius_km)")
     result = db.execute(sql, {"radius_km": radius_km})
     rows = result.mappings().all()
