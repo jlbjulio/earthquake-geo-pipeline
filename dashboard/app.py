@@ -144,18 +144,41 @@ def build_location_presets():
         normalize_location_name(name)
         for name in presets
     }
+    country_codes = set()
     if CountryInfo is not None:
         try:
-            for name, info in CountryInfo.all().items():
+            for source_name, info in CountryInfo.all().items():
                 latlng = info.get("latlng") or []
-                canonical_name = normalize_location_name(name)
-                if len(latlng) >= 2 and canonical_name not in canonical_names:
-                    presets[name] = {
+                translations = info.get("translations") or {}
+                display_name = (
+                    translations.get("es")
+                    or info.get("nativeName")
+                    or info.get("name")
+                    or source_name
+                )
+                display_name = " ".join(str(display_name).split())
+                if display_name:
+                    display_name = display_name[0].upper() + display_name[1:]
+
+                iso = info.get("ISO") or {}
+                country_code = iso.get("alpha3") or iso.get("alpha2")
+                canonical_name = normalize_location_name(display_name)
+                repeated_code = country_code and country_code in country_codes
+
+                if (
+                    len(latlng) >= 2
+                    and canonical_name
+                    and canonical_name not in canonical_names
+                    and not repeated_code
+                ):
+                    presets[display_name] = {
                         "lat": float(latlng[0]),
                         "lon": float(latlng[1]),
                         "radius": estimate_country_radius(info.get("area")),
                     }
                     canonical_names.add(canonical_name)
+                if country_code:
+                    country_codes.add(country_code)
         except Exception:
             pass
 
@@ -1156,12 +1179,12 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
     return fmap
 
 
-def store_custom_coordinates_from_inputs():
+def store_custom_coordinates_from_inputs(lat_input_key, lon_input_key):
     """Copia valores de widgets condicionales a claves que Streamlit no elimina."""
-    if "custom_lat_input" in st.session_state:
-        st.session_state.custom_lat = float(st.session_state.custom_lat_input)
-    if "custom_lon_input" in st.session_state:
-        st.session_state.custom_lon = float(st.session_state.custom_lon_input)
+    if lat_input_key in st.session_state:
+        st.session_state.custom_lat = float(st.session_state[lat_input_key])
+    if lon_input_key in st.session_state:
+        st.session_state.custom_lon = float(st.session_state[lon_input_key])
     st.session_state.custom_coordinate_source = "manual"
 
 
@@ -1272,14 +1295,20 @@ pending_custom_coordinates = st.session_state.pop("pending_custom_coordinates", 
 if pending_custom_coordinates is not None:
     st.session_state.custom_lat = pending_custom_coordinates[0]
     st.session_state.custom_lon = pending_custom_coordinates[1]
-    # Obliga a reconstruir los widgets con las coordenadas recién seleccionadas.
-    st.session_state.pop("custom_lat_input", None)
-    st.session_state.pop("custom_lon_input", None)
+    # Una identidad nueva evita que el navegador restaure el valor anterior.
+    st.session_state.custom_coordinates_revision = (
+        int(st.session_state.get("custom_coordinates_revision", 0)) + 1
+    )
 
 if "custom_lat" not in st.session_state:
     st.session_state.custom_lat = EXTRA_LOCATION_PRESETS["Personalizado"]["lat"]
 if "custom_lon" not in st.session_state:
     st.session_state.custom_lon = EXTRA_LOCATION_PRESETS["Personalizado"]["lon"]
+if "custom_coordinates_revision" not in st.session_state:
+    st.session_state.custom_coordinates_revision = 0
+
+custom_lat_input_key = f"custom_lat_input_{st.session_state.custom_coordinates_revision}"
+custom_lon_input_key = f"custom_lon_input_{st.session_state.custom_coordinates_revision}"
 
 preset = None
 with st.sidebar:
@@ -1342,8 +1371,9 @@ with st.sidebar:
                 value=float(st.session_state.custom_lat),
                 step=0.0001,
                 format="%.4f",
-                key="custom_lat_input",
+                key=custom_lat_input_key,
                 on_change=store_custom_coordinates_from_inputs,
+                args=(custom_lat_input_key, custom_lon_input_key),
             )
             lon = st.number_input(
                 "Longitud",
@@ -1352,8 +1382,9 @@ with st.sidebar:
                 value=float(st.session_state.custom_lon),
                 step=0.0001,
                 format="%.4f",
-                key="custom_lon_input",
+                key=custom_lon_input_key,
                 on_change=store_custom_coordinates_from_inputs,
+                args=(custom_lat_input_key, custom_lon_input_key),
             )
             dist_km = st.slider("Distancia alrededor", 10, 2000, preset_data["radius"], step=10)
             if st.session_state.get("custom_coordinate_source") == "map":
@@ -1492,7 +1523,7 @@ with tab_map:
         if custom_map_selection:
             st.info(
                 "Haz clic en una zona vacía del mapa para usar ese punto como "
-                "centro de la búsqueda. Los círculos de sismos conservan su clic para ver detalles."
+                "centro de la búsqueda."
             )
         fmap = build_map(map_rows, use_radius, lat, lon, dist_km, map_style)
         map_state = st_folium(
