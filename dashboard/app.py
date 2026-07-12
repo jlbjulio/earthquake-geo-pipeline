@@ -1105,6 +1105,11 @@ def build_map(
     fmap = folium.Map(
         location=location,
         zoom_start=zoom_start,
+        min_zoom=2,
+        max_zoom=19,
+        max_bounds=True,
+        max_bounds_viscosity=1.0,
+        world_copy_jump=False,
         tiles=None,
         control_scale=True,
         prefer_canvas=True,
@@ -1118,6 +1123,9 @@ def build_map(
         attr=style["attr"],
         name=map_style,
         detect_retina=True,
+        min_zoom=2,
+        max_zoom=19,
+        no_wrap=True,
     ).add_to(fmap)
 
     if use_radius:
