@@ -1,0 +1,15 @@
+triggers:
+- description: null
+  envs: []
+  last_enabled_at: 2026-07-12 22:33:21.648306+00:00
+  name: Cada 12 horas
+  pipeline_uuid: earthquake_pipeline
+  schedule_interval: 0 */12 * * *
+  schedule_type: time
+  settings:
+    timeout: 600
+  sla: null
+  start_time: '2025-01-01T00:00:00+00:00'
+  status: active
+  token: null
+  variables: {}

@@ -1,8 +1,0 @@
-trigger_type: schedule
-schedule_interval: 0 */12 * * *
-start_time: '2025-01-01T00:00:00'
-status: active
-name: Cada 12 horas
-pipeline_uuid: earthquake_pipeline
-settings:
-  timeout: 600

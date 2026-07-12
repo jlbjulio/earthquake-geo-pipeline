@@ -85,7 +85,7 @@ El backend se publica en `8001` para evitar conflictos con otros proyectos FastA
 +-- mage_project/
 |   +-- pipelines/earthquake_pipeline/
 |   |   +-- blocks/
-|   |   +-- triggers/schedule_12h.yaml
+|   |   +-- triggers.yaml
 +-- backend/
 |   +-- app/
 |       +-- main.py
