@@ -1,7 +1,7 @@
 import os
 import unicodedata
 from html import escape
-from math import ceil, pi, sqrt
+from math import ceil, isfinite, pi, sqrt
 
 import altair as alt
 import folium
@@ -133,8 +133,11 @@ def coordinates_from_map_click(last_clicked):
         longitude = float(last_clicked["lng"])
     except (KeyError, TypeError, ValueError):
         return None
-    if not (-90 <= latitude <= 90 and -180 <= longitude <= 180):
+    if not (isfinite(latitude) and isfinite(longitude) and -90 <= latitude <= 90):
         return None
+    # Leaflet puede devolver longitudes de mundos envueltos (p. ej. 280°).
+    # Se convierten siempre al mundo canónico [-180, 180].
+    longitude = ((longitude + 180) % 360) - 180
     return latitude, longitude
 
 
@@ -1105,11 +1108,9 @@ def build_map(
     fmap = folium.Map(
         location=location,
         zoom_start=zoom_start,
-        min_zoom=2,
+        min_zoom=3,
         max_zoom=19,
-        max_bounds=True,
-        max_bounds_viscosity=1.0,
-        world_copy_jump=False,
+        world_copy_jump=True,
         tiles=None,
         control_scale=True,
         prefer_canvas=True,
@@ -1123,9 +1124,8 @@ def build_map(
         attr=style["attr"],
         name=map_style,
         detect_retina=True,
-        min_zoom=2,
+        min_zoom=3,
         max_zoom=19,
-        no_wrap=True,
     ).add_to(fmap)
 
     if use_radius:
