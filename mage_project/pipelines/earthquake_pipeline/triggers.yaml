@@ -7,6 +7,8 @@ triggers:
   schedule_interval: 0 */12 * * *
   schedule_type: time
   settings:
+    create_initial_pipeline_run: true
+    skip_if_previous_running: true
     timeout: 600
   sla: null
   start_time: '2025-01-01T00:00:00+00:00'

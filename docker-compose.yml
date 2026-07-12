@@ -2,7 +2,8 @@ services:
   # Base de datos espacial: PostgreSQL + PostGIS.
   postgis:
     image: postgis/postgis:16-3.4
-    container_name: earthquake_postgis
+    # Esta etiqueta de PostGIS publica AMD64; Docker Desktop la emula en equipos ARM64.
+    platform: linux/amd64
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-geodata}
       POSTGRES_USER: ${POSTGRES_USER:-geo_user}
@@ -11,7 +12,7 @@ services:
       - "${POSTGIS_PORT:-5433}:5432"
     volumes:
       - postgis_data:/var/lib/postgresql/data
-      - ./postgres/init:/docker-entrypoint-initdb.d
+      - ./postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-geo_user} -d ${POSTGRES_DB:-geodata}"]
       interval: 10s
@@ -22,7 +23,6 @@ services:
   # Base de datos de metadatos para Mage AI. No se publica al host para evitar choques de puertos.
   mage_db:
     image: postgres:16-alpine
-    container_name: earthquake_mage_db
     environment:
       POSTGRES_DB: mage_metadata
       POSTGRES_USER: mage_user
@@ -39,7 +39,6 @@ services:
   # Orquestador: Mage AI.
   mage:
     build: ./mage_project
-    container_name: earthquake_mage
     depends_on:
       mage_db:
         condition: service_healthy
@@ -66,12 +65,21 @@ services:
       - ./mage_project:/home/src/earthquake_geo_pipeline
       - ./scripts:/home/src/earthquake_geo_pipeline/scripts
     command: mage start earthquake_geo_pipeline
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:6789', timeout=5)\"",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
     restart: unless-stopped
 
   # Backend: FastAPI.
   backend:
     build: ./backend
-    container_name: earthquake_api
     depends_on:
       postgis:
         condition: service_healthy
@@ -93,7 +101,6 @@ services:
   # Dashboard: Streamlit.
   dashboard:
     build: ./dashboard
-    container_name: earthquake_dashboard
     depends_on:
       backend:
         condition: service_healthy

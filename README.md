@@ -114,8 +114,37 @@ El backend se publica en `8001` para evitar conflictos con otros proyectos FastA
 
 ## Uso
 
+Requisitos:
+
+- Git.
+- Docker Desktop en Windows/macOS, o Docker Engine con Compose en Linux.
+- Al menos 4 GB de memoria disponibles para Docker.
+
+El proyecto funciona en Windows, macOS y Linux con Docker. En equipos ARM64,
+como Apple Silicon, Docker Desktop ejecuta PostGIS mediante emulacion AMD64;
+por eso la primera construccion puede tardar un poco mas. En Linux ARM64 se
+requiere tener habilitada la emulacion `binfmt/qemu` de Docker.
+
+Clonar el repositorio y entrar en su carpeta:
+
+```bash
+git clone https://github.com/jlbjulio/earthquake-geo-pipeline.git
+cd earthquake-geo-pipeline
+```
+
+El repositorio incluye un archivo `.env` con la configuracion local compartida.
+Para usar otros puertos o credenciales, editar ese archivo antes de iniciar.
+
+Construir e iniciar todos los servicios:
+
 ```bash
 docker compose up -d --build
+```
+
+Comprobar que todos llegaron a estado `healthy`:
+
+```bash
+docker compose ps
 ```
 
 Luego abrir:
@@ -133,9 +162,48 @@ docker compose exec -w /home/src/earthquake_geo_pipeline mage python scripts/tra
 
 Tambien se puede ejecutar desde la UI de Mage AI abriendo el pipeline `earthquake_pipeline`. El trigger incluido queda configurado para correr cada 12 horas.
 
+En una instalacion nueva, Mage registra el trigger desde
+`mage_project/pipelines/earthquake_pipeline/triggers.yaml` y crea una primera
+ejecucion automaticamente. De esta forma el dashboard recibe datos sin esperar
+al siguiente intervalo de 12 horas. El historial posterior es local a cada PC.
+
+### Actualizar una copia existente
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Los volúmenes de PostgreSQL y Mage se conservan durante esta actualización.
+
+### Diagnóstico rápido
+
+```bash
+docker compose ps
+docker compose logs --tail=100 mage
+docker compose logs --tail=100 backend
+docker compose logs --tail=100 dashboard
+```
+
+Si el trigger no aparece después de actualizar el repositorio:
+
+```bash
+docker compose restart mage
+```
+
+No ejecutar `docker compose down -v` salvo que se quiera borrar completamente
+la base espacial, los usuarios y el historial local de Mage. Para reiniciar una
+instalación vacía de forma intencional:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
 ## Variables de entorno principales
 
-Copiar `.env.example` a `.env` si hace falta personalizar puertos o credenciales.
+Editar `.env` si hace falta personalizar puertos o credenciales. El archivo
+`.env.example` se conserva como referencia de los valores disponibles.
 
 ```env
 POSTGIS_PORT=5433

@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 *.zip
 *.tmp
+.pytest_cache/
+.ruff_cache/
+mage_project/.file_versions/
+mage_project/.ssh_tunnel/

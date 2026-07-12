@@ -133,6 +133,7 @@ def load_processed(gdf: gpd.GeoDataFrame, engine) -> int:
 
     with engine.begin() as conn:
         conn.execute(sql, records)
+        conn.execute(text("REFRESH MATERIALIZED VIEW tsunami_events"))
     return len(records)
 
 
