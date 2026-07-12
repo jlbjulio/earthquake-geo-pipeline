@@ -2,7 +2,6 @@ import os
 import unicodedata
 from html import escape
 from math import ceil, pi, sqrt
-from urllib.parse import quote
 
 import altair as alt
 import folium
@@ -19,7 +18,6 @@ except ImportError:
     CountryInfo = None
 
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8001").rstrip("/")
-API_PUBLIC_URL = os.getenv("API_PUBLIC_URL", API_BASE_URL).rstrip("/")
 
 EXTRA_LOCATION_PRESETS = {
     "Personalizado": {"lat": 8.9824, "lon": -79.5199, "radius": 600},
@@ -1037,11 +1035,23 @@ def safe_fetch(endpoint: str, params: dict | None = None) -> tuple[dict, str | N
 
 
 def build_map(rows, use_radius, lat, lon, dist_km, map_style):
-    if rows:
+    if use_radius:
+        location = [lat, lon]
+        if dist_km <= 25:
+            zoom_start = 8
+        elif dist_km <= 100:
+            zoom_start = 6
+        elif dist_km <= 300:
+            zoom_start = 5
+        elif dist_km <= 800:
+            zoom_start = 4
+        else:
+            zoom_start = 3
+    elif rows:
         avg_lat = sum(float(r["latitude"]) for r in rows) / len(rows)
         avg_lon = sum(float(r["longitude"]) for r in rows) / len(rows)
         location = [avg_lat, avg_lon]
-        zoom_start = 3 if not use_radius else 5
+        zoom_start = 3
     else:
         location = [lat, lon]
         zoom_start = 4
@@ -1064,12 +1074,30 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
         detect_retina=True,
     ).add_to(fmap)
 
+    if use_radius:
+        # La zona de búsqueda se dibuja primero y no recibe eventos del mouse;
+        # así nunca tapa el hover o el clic de los sismos colocados encima.
+        folium.Circle(
+            location=[lat, lon],
+            radius=dist_km * 1000,
+            color="#2563eb",
+            fill=True,
+            fill_opacity=0.05,
+            weight=2,
+            interactive=False,
+            bubbling_mouse_events=False,
+        ).add_to(fmap)
+        folium.Marker(
+            location=[lat, lon],
+            icon=folium.Icon(color="blue", icon="crosshairs", prefix="fa"),
+            interactive=False,
+        ).add_to(fmap)
+
     for eq in rows:
         mag = float(eq.get("mag") or 0)
         color = magnitude_color(mag)
         radius = max(4, min(6 + mag * 2.2, 24))
         usgs_id = str(eq.get("usgs_id") or "")
-        detail_url = f"{API_PUBLIC_URL}/api/v1/earthquakes/{quote(usgs_id, safe='')}"
         place_label = escape(str(eq.get("place") or "Sin ubicación"))
         depth_label = format_number(eq.get("depth"))
         parsed_time = pd.to_datetime(eq.get("time"), errors="coerce", utc=True)
@@ -1104,8 +1132,7 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
             f"{distance_html}"
             f"Fecha UTC: {date_label}<br>"
             f"Hora UTC: {hour_label}<br>"
-            f"Mes/Año: {month_label} / {year_label}<br>"
-            f"<a href='{escape(detail_url, quote=True)}' target='_blank' rel='noopener'>Ver detalle API</a>"
+            f"Mes/Año: {month_label} / {year_label}"
         )
 
         folium.CircleMarker(
@@ -1126,25 +1153,15 @@ def build_map(rows, use_radius, lat, lon, dist_km, map_style):
             popup=folium.Popup(popup_html, max_width=320),
         ).add_to(fmap)
 
-    if use_radius:
-        folium.Marker(
-            location=[lat, lon],
-            tooltip="Centro de búsqueda",
-            icon=folium.Icon(color="blue", icon="crosshairs", prefix="fa"),
-        ).add_to(fmap)
-        folium.Circle(
-            location=[lat, lon],
-            radius=dist_km * 1000,
-            color="#2563eb",
-            fill=True,
-            fill_opacity=0.05,
-            weight=2,
-        ).add_to(fmap)
-
     return fmap
 
 
-def mark_custom_coordinates_as_manual():
+def store_custom_coordinates_from_inputs():
+    """Copia valores de widgets condicionales a claves que Streamlit no elimina."""
+    if "custom_lat_input" in st.session_state:
+        st.session_state.custom_lat = float(st.session_state.custom_lat_input)
+    if "custom_lon_input" in st.session_state:
+        st.session_state.custom_lon = float(st.session_state.custom_lon_input)
     st.session_state.custom_coordinate_source = "manual"
 
 
@@ -1255,6 +1272,9 @@ pending_custom_coordinates = st.session_state.pop("pending_custom_coordinates", 
 if pending_custom_coordinates is not None:
     st.session_state.custom_lat = pending_custom_coordinates[0]
     st.session_state.custom_lon = pending_custom_coordinates[1]
+    # Obliga a reconstruir los widgets con las coordenadas recién seleccionadas.
+    st.session_state.pop("custom_lat_input", None)
+    st.session_state.pop("custom_lon_input", None)
 
 if "custom_lat" not in st.session_state:
     st.session_state.custom_lat = EXTRA_LOCATION_PRESETS["Personalizado"]["lat"]
@@ -1319,19 +1339,21 @@ with st.sidebar:
                 "Latitud",
                 min_value=-90.0,
                 max_value=90.0,
+                value=float(st.session_state.custom_lat),
                 step=0.0001,
                 format="%.4f",
-                key="custom_lat",
-                on_change=mark_custom_coordinates_as_manual,
+                key="custom_lat_input",
+                on_change=store_custom_coordinates_from_inputs,
             )
             lon = st.number_input(
                 "Longitud",
                 min_value=-180.0,
                 max_value=180.0,
+                value=float(st.session_state.custom_lon),
                 step=0.0001,
                 format="%.4f",
-                key="custom_lon",
-                on_change=mark_custom_coordinates_as_manual,
+                key="custom_lon_input",
+                on_change=store_custom_coordinates_from_inputs,
             )
             dist_km = st.slider("Distancia alrededor", 10, 2000, preset_data["radius"], step=10)
             if st.session_state.get("custom_coordinate_source") == "map":
