@@ -865,6 +865,35 @@ def format_time(value):
     return parsed.strftime("%Y-%m-%d %H:%M UTC")
 
 
+def format_optional_text(value, fallback="Sin dato"):
+    """Evita mostrar None, NaN o cadenas vacías en campos opcionales."""
+    if value is None or pd.isna(value):
+        return fallback
+    text = str(value).strip()
+    if not text or text.casefold() in {"nan", "none", "null"}:
+        return fallback
+    return text
+
+
+def format_alert(value):
+    alert = format_optional_text(value, "Sin alerta")
+    return {
+        "green": "Verde",
+        "yellow": "Amarilla",
+        "orange": "Naranja",
+        "red": "Roja",
+    }.get(alert.casefold(), alert)
+
+
+def format_status(value):
+    status = format_optional_text(value)
+    return {
+        "reviewed": "Revisado",
+        "automatic": "Automático",
+        "deleted": "Eliminado",
+    }.get(status.casefold(), status)
+
+
 def format_period_label(use_all_time, days_back):
     return "Todo lo cargado" if use_all_time else f"Últimos {days_back} días"
 
@@ -977,6 +1006,16 @@ def render_events_table(rows):
     ]
     columns = [column for column in columns if column in df.columns]
     table_df = df[columns].copy()
+    text_formatters = {
+        "Lugar": lambda value: format_optional_text(value, "Sin ubicación"),
+        "Tipo": format_optional_text,
+        "Alerta": format_alert,
+        "Estado": format_status,
+    }
+    for column, formatter in text_formatters.items():
+        if column in table_df.columns:
+            table_df[column] = table_df[column].map(formatter)
+
     for column in ["Magnitud", "Profundidad km", "Latitud", "Longitud", "Distancia km"]:
         if column in table_df.columns:
             table_df[column] = pd.to_numeric(table_df[column], errors="coerce").round(2)
@@ -1668,7 +1707,7 @@ with tab_map:
             strongest = max(map_rows, key=lambda item: float(item.get("mag") or 0))
             st.divider()
             st.subheader("Evento mayor")
-            st.write(strongest.get("place", "Unknown"))
+            st.write(strongest.get("place") or "Sin ubicación")
             st.metric("Magnitud", format_number(strongest.get("mag")))
             st.metric("Profundidad", f"{format_number(strongest.get('depth'))} km")
             st.caption(format_time(strongest.get("time")))
@@ -1740,7 +1779,7 @@ with tab_summary:
             (
                 "Evento mayor",
                 f"M {format_number(strongest.get('mag'))}",
-                escape(str(strongest.get("place", "Sin ubicación"))),
+                escape(str(strongest.get("place") or "Sin ubicación")),
             ),
             (
                 "Zona más repetida",
@@ -2065,7 +2104,7 @@ with tab_summary:
             unsafe_allow_html=True,
         )
         for event in strongest_events:
-            place = escape(str(event.get("place", "Sin ubicación")))
+            place = escape(str(event.get("place") or "Sin ubicación"))
             category = escape(magnitude_label(event.get("mag")))
             event_time = format_time(event.get("time"))
             depth = format_number(event.get("depth"))
