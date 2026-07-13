@@ -1133,7 +1133,6 @@ def build_map(
     dist_km,
     map_style,
     allow_map_recenter=False,
-    selected_event_id=None,
 ):
     if use_radius:
         location = [lat, lon]
@@ -1263,7 +1262,6 @@ def build_map(
             popup=folium.Popup(
                 popup_html,
                 max_width=320,
-                show=usgs_id == selected_event_id,
             ),
         ).add_to(fmap)
 
@@ -1624,50 +1622,28 @@ with tab_map:
             dist_km,
             map_style,
             allow_map_recenter=custom_map_selection,
-            selected_event_id=st.session_state.get("selected_map_event_id"),
         )
         map_state = st_folium(
             fmap,
             width=None,
             height=570,
             key="main_map_custom" if custom_map_selection else "main_map",
-            returned_objects=["last_clicked", "last_object_clicked"]
-            if custom_map_selection
-            else ["last_object_clicked"],
+            # Los popups de eventos se resuelven en Leaflet y no deben provocar
+            # una ejecución completa de Streamlit. En personalizado solo se
+            # devuelve el clic del mapa vacío para actualizar coordenadas.
+            returned_objects=["last_clicked"] if custom_map_selection else [],
         )
-        object_coordinates = coordinates_from_map_click(
-            (map_state or {}).get("last_object_clicked")
-        )
-        clicked_event_id = None
-        if object_coordinates is not None:
-            for row in map_rows:
-                row_lat = float(row.get("latitude"))
-                row_lon = float(row.get("longitude"))
-                if (
-                    abs(row_lat - object_coordinates[0]) < 0.000001
-                    and abs(row_lon - object_coordinates[1]) < 0.000001
-                ):
-                    clicked_event_id = str(row.get("usgs_id") or "")
-                    break
-
         if custom_map_selection:
             clicked_coordinates = coordinates_from_map_click(
                 (map_state or {}).get("last_clicked")
             )
             if clicked_coordinates is not None:
-                st.session_state.selected_map_event_id = clicked_event_id
                 click_signature = tuple(round(value, 7) for value in clicked_coordinates)
                 if st.session_state.get("last_custom_map_click") != click_signature:
                     st.session_state.last_custom_map_click = click_signature
                     st.session_state.pending_custom_coordinates = clicked_coordinates
                     st.session_state.custom_coordinate_source = "map"
                     st.rerun()
-        elif (
-            clicked_event_id
-            and st.session_state.get("selected_map_event_id") != clicked_event_id
-        ):
-            st.session_state.selected_map_event_id = clicked_event_id
-            st.rerun()
     with right:
         st.subheader("Vista actual")
         st.metric("Sismos encontrados", format_number(total_found))
@@ -1679,29 +1655,6 @@ with tab_map:
             st.caption(f"Centro: {lat:.2f}, {lon:.2f}")
         else:
             st.caption("Consulta global sin radio geográfico.")
-
-        selected_event_id = st.session_state.get("selected_map_event_id")
-        selected_event = next(
-            (
-                event
-                for event in map_rows
-                if str(event.get("usgs_id") or "") == selected_event_id
-            ),
-            None,
-        )
-        if selected_event:
-            st.divider()
-            st.subheader("Evento seleccionado")
-            st.write(selected_event.get("place") or "Sin ubicación")
-            selected_cols = st.columns(2)
-            selected_cols[0].metric(
-                "Magnitud", format_number(selected_event.get("mag"))
-            )
-            selected_cols[1].metric(
-                "Profundidad",
-                f"{format_number(selected_event.get('depth'))} km",
-            )
-            st.caption(format_time(selected_event.get("time")))
 
         if map_rows:
             strongest = max(map_rows, key=lambda item: float(item.get("mag") or 0))
