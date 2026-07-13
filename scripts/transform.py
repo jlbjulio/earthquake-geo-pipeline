@@ -2,7 +2,6 @@
 ETL - Transform: Limpia, transforma datos sísmicos y construye geometrías.
 Convierte coordenadas a objetos Point de PostGIS usando GeoPandas.
 """
-import json
 import os
 import sys
 
@@ -18,8 +17,9 @@ def transform_earthquakes(input_path: str) -> gpd.GeoDataFrame:
         return gpd.GeoDataFrame()
 
     # Limpiar valores nulos en columnas críticas
-    df["mag"] = df["mag"].fillna(0)
-    df["depth"] = df["depth"].fillna(0)
+    # Una magnitud o profundidad desconocida no equivale científicamente a cero.
+    df["mag"] = pd.to_numeric(df["mag"], errors="coerce")
+    df["depth"] = pd.to_numeric(df["depth"], errors="coerce")
     df["place"] = df["place"].fillna("Unknown")
     df["status"] = df["status"].fillna("unknown")
     df["magType"] = df["magType"].fillna("unknown")

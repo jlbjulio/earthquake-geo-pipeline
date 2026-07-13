@@ -130,7 +130,7 @@ def extract_and_load():
     engine = get_engine()
     df = extract_earthquakes()
     count = load_raw(df, engine)
-    print(f"Extraidos y cargados {count} eventos sismicos a raw_earthquakes")
+    print(f"Extraídos y cargados {count} eventos sísmicos a raw_earthquakes")
     return {"eventos": len(df), "insertados": count}
 
 

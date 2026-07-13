@@ -44,7 +44,7 @@ def health_check():
 
 @router.get("/earthquakes")
 def list_earthquakes(
-    min_mag: float = Query(0, ge=0, le=10, description="Magnitud mínima"),
+    min_mag: float = Query(-2, ge=-10, le=10, description="Magnitud mínima"),
     max_mag: float = Query(10, ge=0, le=10, description="Magnitud máxima"),
     limit: int = Query(100, ge=1, le=1000),
     offset: int = Query(0, ge=0),
@@ -99,8 +99,8 @@ def list_earthquakes(
 def earthquakes_in_radius(
     lat: float = Query(..., ge=-90, le=90, description="Latitud del centro"),
     lon: float = Query(..., ge=-180, le=180, description="Longitud del centro"),
-    dist_km: float = Query(10, ge=1, le=20000, description="Radio en kilometros"),
-    min_mag: float = Query(0, ge=0, le=10),
+    dist_km: float = Query(10, ge=1, le=20000, description="Radio en kilómetros"),
+    min_mag: float = Query(-2, ge=-10, le=10),
     max_mag: float = Query(10, ge=0, le=10),
     days_back: int = Query(30, ge=1),
     limit: int = Query(100, ge=1, le=1000),
@@ -183,7 +183,7 @@ def earthquake_stats(db: Session = Depends(get_db)):
 
 @router.get("/earthquakes/analysis")
 def earthquake_analysis(
-    min_mag: float = Query(0, ge=0, le=10),
+    min_mag: float = Query(-2, ge=-10, le=10),
     max_mag: float = Query(10, ge=0, le=10),
     days_back: int = Query(30, ge=1),
     all_time: bool = Query(False, description="Consultar todo lo cargado"),
@@ -192,7 +192,7 @@ def earthquake_analysis(
     dist_km: float | None = Query(None, ge=1, le=20000),
     db: Session = Depends(get_db),
 ):
-    """Resumen analitico agregado en PostGIS para evitar traer datos pesados al dashboard."""
+    """Resumen analítico agregado en PostGIS para evitar traer datos pesados al dashboard."""
     validate_magnitude_range(min_mag, max_mag)
     radius_values = (lat, lon, dist_km)
     if any(value is not None for value in radius_values) and not all(

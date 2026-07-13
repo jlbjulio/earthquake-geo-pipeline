@@ -61,8 +61,9 @@ def transform_to_geodataframe(df: pd.DataFrame) -> gpd.GeoDataFrame:
     if df.empty:
         return gpd.GeoDataFrame()
 
-    df["mag"] = df["mag"].fillna(0)
-    df["depth"] = df["depth"].fillna(0)
+    # Conserva los valores científicos desconocidos como NULL; cero es un dato real.
+    df["mag"] = pd.to_numeric(df["mag"], errors="coerce")
+    df["depth"] = pd.to_numeric(df["depth"], errors="coerce")
     df["place"] = df["place"].fillna("Unknown")
     df["status"] = df["status"].fillna("unknown")
     df["magtype"] = df["magtype"].fillna("unknown")
@@ -92,16 +93,16 @@ def load_processed(gdf: gpd.GeoDataFrame, engine) -> int:
     for _, row in gdf.iterrows():
         records.append({
             "usgs_id": row.get("usgs_id"),
-            "mag": row.get("mag"),
+            "mag": None if pd.isna(row.get("mag")) else row.get("mag"),
             "place": row.get("place"),
-            "time": row.get("time"),
-            "updated": row.get("updated"),
+            "time": None if pd.isna(row.get("time")) else row.get("time"),
+            "updated": None if pd.isna(row.get("updated")) else row.get("updated"),
             "magType": row.get("magtype"),
             "tsunami": row.get("tsunami", 0),
             "alert": row.get("alert", ""),
             "status": row.get("status", "unknown"),
             "sig": row.get("sig", 0),
-            "depth": row.get("depth", 0),
+            "depth": None if pd.isna(row.get("depth")) else row.get("depth"),
             "wkt": row.geometry.wkt,
         })
 
@@ -143,10 +144,10 @@ def transform_and_load():
     incremental = not full_reprocess
     df_raw = read_raw_earthquakes(engine, incremental=incremental)
     mode = "incrementales" if incremental else "totales"
-    print(f"Leidos {len(df_raw)} registros {mode} desde raw_earthquakes")
+    print(f"Leídos {len(df_raw)} registros {mode} desde raw_earthquakes")
 
     gdf = transform_to_geodataframe(df_raw)
-    print(f"Transformados {len(gdf)} registros a GeoDataFrame con geometrias")
+    print(f"Transformados {len(gdf)} registros a GeoDataFrame con geometrías")
 
     count = load_processed(gdf, engine)
     print(f"Cargados {count} eventos a tabla final earthquakes")

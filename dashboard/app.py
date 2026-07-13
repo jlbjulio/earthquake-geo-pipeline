@@ -1374,9 +1374,9 @@ with st.sidebar:
 
     min_mag, max_mag = st.slider(
         "Magnitud que quieres ver",
-        min_value=0.0,
-        max_value=9.0,
-        value=(0.0, 9.0),
+        min_value=-2.0,
+        max_value=10.0,
+        value=(-2.0, 10.0),
         step=0.1,
         key="mag_range",
     )
@@ -1456,7 +1456,7 @@ with st.sidebar:
 
     st.caption("Fuente: USGS Earthquake Catalog")
 
-    with st.expander("Guia rapida"):
+    with st.expander("Guía rápida"):
         st.write("1. Usa Eventos recientes para ver sismos globales.")
         st.write("2. Usa Cerca de una zona para buscar alrededor de un país o escribir sus coordenadas.")
         st.write("3. Ajusta la magnitud para ocultar eventos muy pequeños.")
@@ -1478,9 +1478,9 @@ health, health_error = safe_fetch("health", {"_": 1})
 stats, stats_error = safe_fetch("earthquakes/stats")
 
 status_html = (
-    f"<span class='status-pill'>API conectada</span>"
+    "<span class='status-pill'>API conectada</span>"
     if not health_error
-    else "<span class='status-pill' style='background:#fff1f0;color:#9f1d1d;border-color:#f3b4ad;'>API sin conexion</span>"
+    else "<span class='status-pill' style='background:#fff1f0;color:#9f1d1d;border-color:#f3b4ad;'>API sin conexión</span>"
 )
 st.markdown(
     f"""
@@ -1691,7 +1691,7 @@ with tab_summary:
         card_cols = st.columns(5)
         cards = [
             (
-                "Lectura rapida",
+                "Lectura rápida",
                 insight_text(counts, total_analyzed),
                 f"{total_analyzed:,} eventos analizados",
             ),
