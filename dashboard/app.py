@@ -839,10 +839,21 @@ def format_number(value, fallback="--"):
     try:
         number = float(value)
     except (TypeError, ValueError):
-        return value
+        return fallback
+    if not isfinite(number):
+        return fallback
     if number.is_integer():
         return f"{int(number):,}"
     return f"{number:,.2f}"
+
+
+def finite_numeric(series, fill_value=None):
+    """Convierte una serie a números y descarta NaN e infinitos."""
+    numeric = pd.to_numeric(series, errors="coerce")
+    numeric = numeric.where(
+        numeric.map(lambda value: pd.isna(value) or isfinite(float(value)))
+    )
+    return numeric.fillna(fill_value) if fill_value is not None else numeric
 
 
 def format_time(value):
@@ -975,6 +986,7 @@ def render_events_table(rows):
         escape=True,
         classes="events-table",
         border=0,
+        na_rep="--",
     )
     st.markdown(
         f"<div class='table-wrap'>{table_html}</div>",
@@ -1734,11 +1746,11 @@ with tab_summary:
         )
         for analysis_df in (region_df, depth_df):
             if not analysis_df.empty:
-                analysis_df["Eventos"] = pd.to_numeric(
-                    analysis_df["Eventos"], errors="coerce"
-                ).fillna(0)
-                analysis_df["Magnitud promedio"] = pd.to_numeric(
-                    analysis_df["Magnitud promedio"], errors="coerce"
+                analysis_df["Eventos"] = finite_numeric(
+                    analysis_df["Eventos"], fill_value=0
+                )
+                analysis_df["Magnitud promedio"] = finite_numeric(
+                    analysis_df["Magnitud promedio"]
                 )
 
         left_chart, right_chart = st.columns([1.05, 1])
@@ -1838,11 +1850,11 @@ with tab_summary:
         )
         for period_df in (daily_df, monthly_df, yearly_df):
             if not period_df.empty:
-                period_df["Eventos"] = pd.to_numeric(
-                    period_df["Eventos"], errors="coerce"
-                ).fillna(0)
-                period_df["Magnitud promedio"] = pd.to_numeric(
-                    period_df["Magnitud promedio"], errors="coerce"
+                period_df["Eventos"] = finite_numeric(
+                    period_df["Eventos"], fill_value=0
+                )
+                period_df["Magnitud promedio"] = finite_numeric(
+                    period_df["Magnitud promedio"]
                 )
         st.markdown(
             """
@@ -1855,6 +1867,7 @@ with tab_summary:
         )
         if not daily_df.empty:
             daily_df["Fecha"] = pd.to_datetime(daily_df["Fecha"], errors="coerce")
+            daily_df = daily_df.dropna(subset=["Fecha"])
             daily_base = alt.Chart(daily_df)
             daily_bars = daily_base.mark_bar(
                 color="#7a3f2a",
