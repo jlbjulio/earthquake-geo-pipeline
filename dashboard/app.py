@@ -1676,7 +1676,7 @@ with tab_summary:
             unsafe_allow_html=True,
         )
 
-        card_cols = st.columns(4)
+        card_cols = st.columns(5)
         cards = [
             (
                 "Lectura rapida",
@@ -1687,6 +1687,11 @@ with tab_summary:
                 "Categoría dominante",
                 dominant_category,
                 f"{int(counts.get(dominant_category, 0)):,} eventos en esta categoría",
+            ),
+            (
+                "Magnitud promedio",
+                f"M {format_number(analysis_summary.get('avg_magnitude'))}",
+                "Promedio de los eventos que cumplen los filtros",
             ),
             (
                 "Evento mayor",
@@ -1722,11 +1727,19 @@ with tab_summary:
         )
 
         region_df = pd.DataFrame(top_regions).rename(
-            columns={"region": "Región", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+            columns={"region": "Región", "events": "Eventos", "avg_magnitude": "Magnitud promedio"}
         )
         depth_df = pd.DataFrame(analysis_data.get("depth_groups") or []).rename(
-            columns={"depth_group": "Profundidad", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+            columns={"depth_group": "Profundidad", "events": "Eventos", "avg_magnitude": "Magnitud promedio"}
         )
+        for analysis_df in (region_df, depth_df):
+            if not analysis_df.empty:
+                analysis_df["Eventos"] = pd.to_numeric(
+                    analysis_df["Eventos"], errors="coerce"
+                ).fillna(0)
+                analysis_df["Magnitud promedio"] = pd.to_numeric(
+                    analysis_df["Magnitud promedio"], errors="coerce"
+                )
 
         left_chart, right_chart = st.columns([1.05, 1])
         with left_chart:
@@ -1766,7 +1779,15 @@ with tab_summary:
                         axis=alt.Axis(tickCount=5, format=",.0f"),
                     ),
                     y=alt.Y("Región:N", sort="-x", title=None),
-                    tooltip=["Región", "Eventos", "Magnitud prom."],
+                    tooltip=[
+                        alt.Tooltip("Región:N"),
+                        alt.Tooltip("Eventos:Q", format=",.0f"),
+                        alt.Tooltip(
+                            "Magnitud promedio:Q",
+                            title="Magnitud promedio",
+                            format=".2f",
+                        ),
+                    ],
                 ).properties(
                     height=240,
                     title="Zonas más frecuentes",
@@ -1791,7 +1812,15 @@ with tab_summary:
                     sort=["Superficial", "Intermedia", "Profunda"],
                     title=None,
                 ),
-                tooltip=["Profundidad", "Eventos", "Magnitud prom."],
+                tooltip=[
+                    alt.Tooltip("Profundidad:N"),
+                    alt.Tooltip("Eventos:Q", format=",.0f"),
+                    alt.Tooltip(
+                        "Magnitud promedio:Q",
+                        title="Magnitud promedio",
+                        format=".2f",
+                    ),
+                ],
             ).properties(
                 height=210,
                 title="Eventos por profundidad",
@@ -1799,14 +1828,22 @@ with tab_summary:
             st.altair_chart(chart_base(depth_chart), width="stretch", theme=None)
 
         daily_df = pd.DataFrame(analysis_data.get("daily_counts") or []).rename(
-            columns={"period": "Fecha", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+            columns={"period": "Fecha", "events": "Eventos", "avg_magnitude": "Magnitud promedio"}
         )
         monthly_df = pd.DataFrame(analysis_data.get("monthly_counts") or []).rename(
-            columns={"period": "Mes", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+            columns={"period": "Mes", "events": "Eventos", "avg_magnitude": "Magnitud promedio"}
         )
         yearly_df = pd.DataFrame(analysis_data.get("yearly_counts") or []).rename(
-            columns={"period": "Año", "events": "Eventos", "avg_magnitude": "Magnitud prom."}
+            columns={"period": "Año", "events": "Eventos", "avg_magnitude": "Magnitud promedio"}
         )
+        for period_df in (daily_df, monthly_df, yearly_df):
+            if not period_df.empty:
+                period_df["Eventos"] = pd.to_numeric(
+                    period_df["Eventos"], errors="coerce"
+                ).fillna(0)
+                period_df["Magnitud promedio"] = pd.to_numeric(
+                    period_df["Magnitud promedio"], errors="coerce"
+                )
         st.markdown(
             """
             <div class="section-band">
@@ -1818,7 +1855,8 @@ with tab_summary:
         )
         if not daily_df.empty:
             daily_df["Fecha"] = pd.to_datetime(daily_df["Fecha"], errors="coerce")
-            daily_chart = alt.Chart(daily_df).mark_bar(
+            daily_base = alt.Chart(daily_df)
+            daily_bars = daily_base.mark_bar(
                 color="#7a3f2a",
                 cornerRadiusTopLeft=3,
                 cornerRadiusTopRight=3,
@@ -1831,19 +1869,48 @@ with tab_summary:
                 ),
                 tooltip=[
                     alt.Tooltip("Fecha:T", title="Día", format="%Y-%m-%d"),
-                    "Eventos",
-                    "Magnitud prom.",
+                    alt.Tooltip("Eventos:Q", format=",.0f"),
+                    alt.Tooltip(
+                        "Magnitud promedio:Q",
+                        title="Magnitud promedio",
+                        format=".2f",
+                    ),
                 ],
+            )
+            daily_average = daily_base.mark_line(
+                color="#2563eb",
+                point=alt.OverlayMarkDef(color="#2563eb", filled=True, size=45),
+                strokeWidth=2.5,
+            ).encode(
+                x=alt.X("Fecha:T"),
+                y=alt.Y(
+                    "Magnitud promedio:Q",
+                    title="Magnitud promedio",
+                    axis=alt.Axis(titleColor="#2563eb", format=".1f"),
+                    scale=alt.Scale(zero=False),
+                ),
+                tooltip=[
+                    alt.Tooltip("Fecha:T", title="Día", format="%Y-%m-%d"),
+                    alt.Tooltip(
+                        "Magnitud promedio:Q",
+                        title="Magnitud promedio",
+                        format=".2f",
+                    ),
+                ],
+            )
+            daily_chart = alt.layer(daily_bars, daily_average).resolve_scale(
+                y="independent"
             ).properties(
                 height=260,
-                title="Eventos por día",
+                title="Eventos y magnitud promedio por día",
             )
             st.altair_chart(chart_base(daily_chart), width="stretch", theme=None)
 
         period_left, period_right = st.columns(2)
         with period_left:
             if not monthly_df.empty:
-                monthly_chart = alt.Chart(monthly_df).mark_bar(
+                monthly_base = alt.Chart(monthly_df)
+                monthly_bars = monthly_base.mark_bar(
                     color="#a85b36",
                     cornerRadiusEnd=5,
                 ).encode(
@@ -1853,15 +1920,48 @@ with tab_summary:
                         title="Cantidad",
                         axis=alt.Axis(tickCount=5, format=",.0f"),
                     ),
-                    tooltip=["Mes", "Eventos", "Magnitud prom."],
-                ).properties(
+                    tooltip=[
+                        alt.Tooltip("Mes:N"),
+                        alt.Tooltip("Eventos:Q", format=",.0f"),
+                        alt.Tooltip(
+                            "Magnitud promedio:Q",
+                            title="Magnitud promedio",
+                            format=".2f",
+                        ),
+                    ],
+                )
+                monthly_average = monthly_base.mark_line(
+                    color="#2563eb",
+                    point=alt.OverlayMarkDef(color="#2563eb", filled=True, size=50),
+                    strokeWidth=2.5,
+                ).encode(
+                    x=alt.X("Mes:N", sort=None),
+                    y=alt.Y(
+                        "Magnitud promedio:Q",
+                        title="Magnitud promedio",
+                        axis=alt.Axis(titleColor="#2563eb", format=".1f"),
+                        scale=alt.Scale(zero=False),
+                    ),
+                    tooltip=[
+                        alt.Tooltip("Mes:N"),
+                        alt.Tooltip(
+                            "Magnitud promedio:Q",
+                            title="Magnitud promedio",
+                            format=".2f",
+                        ),
+                    ],
+                )
+                monthly_chart = alt.layer(
+                    monthly_bars, monthly_average
+                ).resolve_scale(y="independent").properties(
                     height=210,
-                    title="Eventos por mes",
+                    title="Eventos y magnitud promedio por mes",
                 )
                 st.altair_chart(chart_base(monthly_chart), width="stretch", theme=None)
         with period_right:
             if not yearly_df.empty:
-                yearly_chart = alt.Chart(yearly_df).mark_bar(
+                yearly_base = alt.Chart(yearly_df)
+                yearly_bars = yearly_base.mark_bar(
                     color="#2f855a",
                     cornerRadiusEnd=5,
                 ).encode(
@@ -1871,10 +1971,42 @@ with tab_summary:
                         title="Cantidad",
                         axis=alt.Axis(tickCount=5, format=",.0f"),
                     ),
-                    tooltip=["Año", "Eventos", "Magnitud prom."],
-                ).properties(
+                    tooltip=[
+                        alt.Tooltip("Año:N"),
+                        alt.Tooltip("Eventos:Q", format=",.0f"),
+                        alt.Tooltip(
+                            "Magnitud promedio:Q",
+                            title="Magnitud promedio",
+                            format=".2f",
+                        ),
+                    ],
+                )
+                yearly_average = yearly_base.mark_line(
+                    color="#2563eb",
+                    point=alt.OverlayMarkDef(color="#2563eb", filled=True, size=50),
+                    strokeWidth=2.5,
+                ).encode(
+                    x=alt.X("Año:N", sort=None),
+                    y=alt.Y(
+                        "Magnitud promedio:Q",
+                        title="Magnitud promedio",
+                        axis=alt.Axis(titleColor="#2563eb", format=".1f"),
+                        scale=alt.Scale(zero=False),
+                    ),
+                    tooltip=[
+                        alt.Tooltip("Año:N"),
+                        alt.Tooltip(
+                            "Magnitud promedio:Q",
+                            title="Magnitud promedio",
+                            format=".2f",
+                        ),
+                    ],
+                )
+                yearly_chart = alt.layer(
+                    yearly_bars, yearly_average
+                ).resolve_scale(y="independent").properties(
                     height=210,
-                    title="Eventos por año",
+                    title="Eventos y magnitud promedio por año",
                 )
                 st.altair_chart(chart_base(yearly_chart), width="stretch", theme=None)
 
