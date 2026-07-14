@@ -1,102 +1,139 @@
-<mxfile host="app.diagrams.net" modified="2026-06-06T10:00:00Z" agent="Codex" version="24.7.17">
-  <diagram id="stage1-architecture" name="Arquitectura Etapa 1">
-    <mxGraphModel dx="1600" dy="1000" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1400" pageHeight="1000" math="0" shadow="0">
+<mxfile host="app.diagrams.net">
+  <diagram name="Arquitectura Etapa 1" id="zy8LnBOksOwavhcyboYW">
+    <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
-
-        <mxCell id="title" value="Arquitectura y Exposicion de Datos Geoespaciales" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1f2937;" vertex="1" parent="1">
-          <mxGeometry x="280" y="20" width="840" height="30" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-1" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=22;fontStyle=1;fontColor=#1f2937;" value="Arquitectura &amp;amp; Exposición de datos geoespaciales" vertex="1">
+          <mxGeometry height="30" width="840" x="-90" y="512" as="geometry" />
         </mxCell>
-        <mxCell id="subtitle" value="Etapa 1 - Blueprint de Diseno y Modelado de Datos" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#4b5563;" vertex="1" parent="1">
-          <mxGeometry x="300" y="52" width="800" height="24" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-2" parent="1" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;fontSize=12;fontColor=#4b5563;" value="Etapa 1 - Blueprint de diseño &amp;amp; Modelado de datos" vertex="1">
+          <mxGeometry height="24" width="800" x="-85" y="542" as="geometry" />
         </mxCell>
-
-        <mxCell id="phase_ingesta" value="1. Ingesta" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#60a5fa;fillColor=#eff6ff;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="420" y="95" width="430" height="180" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#60a5fa;fillColor=#eff6ff;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" value="1. Ingesta" vertex="1">
+          <mxGeometry height="180" width="430" x="100" y="585" as="geometry" />
         </mxCell>
-        <mxCell id="phase_storage" value="2. Almacenamiento" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#c084fc;fillColor=#faf5ff;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="420" y="295" width="430" height="150" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#c084fc;fillColor=#faf5ff;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" value="2. Almacenamiento" vertex="1">
+          <mxGeometry height="150" width="430" x="100" y="900" as="geometry" />
         </mxCell>
-        <mxCell id="phase_processing" value="3. Procesamiento" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#fbbf24;fillColor=#fffbeb;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="420" y="465" width="430" height="150" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#fbbf24;fillColor=#fffbeb;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" value="3. Procesamiento" vertex="1">
+          <mxGeometry height="150" width="430" x="100" y="1110" as="geometry" />
         </mxCell>
-        <mxCell id="phase_consumo" value="4. Consumo" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#34d399;fillColor=#ecfdf5;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" vertex="1" parent="1">
-          <mxGeometry x="320" y="635" width="760" height="220" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-10" parent="ewUvNGYYSKB0qQvGYQx4-5" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#78350f;fontSize=13;spacing=8;" value="Transformación espacial&lt;br&gt;Pandas + GeoPandas&lt;br&gt;Genera Point y SRID 4326" vertex="1">
+          <mxGeometry height="72" width="280" x="75" y="39" as="geometry" />
         </mxCell>
-
-        <mxCell id="source" value="USGS Earthquake API&#10;Fuente externa con coordenadas y actualizacion frecuente" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="495" y="140" width="280" height="72" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;container=1;recursiveResize=0;collapsible=0;strokeColor=#34d399;fillColor=#ecfdf5;fontStyle=1;fontSize=15;align=left;spacingLeft=14;verticalAlign=top;" value="4. Consumo" vertex="1">
+          <mxGeometry height="220" width="760" x="-65" y="1420" as="geometry" />
         </mxCell>
-        <mxCell id="extract" value="Extraccion y carga&#10;Consulta la API y carga&#10;datos en raw_earthquakes" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#7f1d1d;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="495" y="225" width="280" height="72" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-12" parent="ewUvNGYYSKB0qQvGYQx4-6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontSize=13;spacing=8;" value="FastAPI&lt;br&gt;API REST para filtros, detalle, radio y estadísticas" vertex="1">
+          <mxGeometry height="78" width="230" x="110" y="39" as="geometry" />
         </mxCell>
-        <mxCell id="rawdb" value="PostgreSQL + PostGIS&#10;Tabla raw_earthquakes&#10;Conserva el dato original" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;fontColor=#581c87;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="495" y="340" width="280" height="72" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-14" parent="ewUvNGYYSKB0qQvGYQx4-6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#6b7280;fontColor=#111827;fontStyle=1;fontSize=13;spacing=8;" value="Usuario final" vertex="1">
+          <mxGeometry height="42" width="230" x="265" y="159" as="geometry" />
         </mxCell>
-        <mxCell id="transform" value="Transformacion espacial&#10;Pandas + GeoPandas&#10;Genera Point y SRID 4326" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fef3c7;strokeColor=#d97706;fontColor=#78350f;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="495" y="510" width="280" height="72" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-13" parent="ewUvNGYYSKB0qQvGYQx4-6" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontColor=#064e3b;fontSize=13;spacing=8;" value="Streamlit + Folium&#xa;Dashboard y mapa interactivo" vertex="1">
+          <mxGeometry height="78" width="230" x="410" y="39" as="geometry" />
         </mxCell>
-        <mxCell id="finaldb" value="PostgreSQL + PostGIS&#10;Tabla earthquakes + indices GIST&#10;Lista para consultas espaciales" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;fontColor=#4c1d95;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="495" y="595" width="280" height="72" as="geometry" />
-        </mxCell>
-        <mxCell id="api" value="FastAPI&#10;API REST para filtros, detalle, radio y estadisticas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dcfce7;strokeColor=#16a34a;fontColor=#14532d;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="390" y="705" width="230" height="78" as="geometry" />
-        </mxCell>
-        <mxCell id="dashboard" value="Streamlit + Folium&#10;Dashboard y mapa interactivo" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d1fae5;strokeColor=#059669;fontColor=#064e3b;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="770" y="705" width="230" height="78" as="geometry" />
-        </mxCell>
-        <mxCell id="user" value="Usuario final / docente" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f9fafb;strokeColor=#6b7280;fontColor=#111827;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="580" y="790" width="230" height="42" as="geometry" />
-        </mxCell>
-
-        <mxCell id="mage" value="Mage AI&#10;Orquesta el pipeline&#10;Ejecucion programada cada 12 horas" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef2ff;strokeColor=#6366f1;fontColor=#312e81;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="110" y="235" width="220" height="88" as="geometry" />
-        </mxCell>
-        <mxCell id="docker" value="Docker Compose&#10;Integra PostGIS, Mage, FastAPI y Streamlit" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=#6b7280;fontColor=#374151;fontStyle=1;fontSize=13;spacing=8;" vertex="1" parent="1">
-          <mxGeometry x="940" y="340" width="260" height="88" as="geometry" />
-        </mxCell>
-
-        <mxCell id="edge1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="source" target="extract">
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-22" edge="1" parent="ewUvNGYYSKB0qQvGYQx4-6" source="ewUvNGYYSKB0qQvGYQx4-12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=2;endArrow=block;endFill=1;" target="ewUvNGYYSKB0qQvGYQx4-13">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9333ea;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="extract" target="rawdb">
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-23" edge="1" parent="ewUvNGYYSKB0qQvGYQx4-6" source="ewUvNGYYSKB0qQvGYQx4-13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4b5563;strokeWidth=2;endArrow=block;endFill=1;" target="ewUvNGYYSKB0qQvGYQx4-14">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="rawdb" target="transform">
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-7" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dbeafe;strokeColor=#2563eb;fontColor=#1e3a8a;fontStyle=1;fontSize=13;spacing=8;" value="USGS Earthquake API&#xa;Fuente externa con coordenadas y actualizacion frecuente" vertex="1">
+          <mxGeometry height="72" width="280" x="175" y="630" as="geometry" />
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fee2e2;strokeColor=#dc2626;fontColor=#7f1d1d;fontSize=13;spacing=8;" value="Extracción y carga&lt;br&gt;Consulta la API y carga&lt;br&gt;datos en raw_earthquakes" vertex="1">
+          <mxGeometry height="72" width="280" x="175" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-9" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3e8ff;strokeColor=#9333ea;fontColor=#581c87;fontSize=13;spacing=8;" value="PostgreSQL + PostGIS&#xa;Tabla raw_earthquakes&#xa;Conserva el dato original" vertex="1">
+          <mxGeometry height="72" width="280" x="175" y="945" as="geometry" />
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-15" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef2ff;strokeColor=#6366f1;fontColor=#312e81;fontStyle=1;fontSize=13;spacing=8;" value="Mage AI&lt;br&gt;Orquesta el pipeline&lt;br&gt;Ejecución programada&amp;nbsp;" vertex="1">
+          <mxGeometry height="88" width="220" x="-230" y="782" as="geometry" />
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-16" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f3f4f6;strokeColor=#6b7280;fontColor=#374151;fontStyle=1;fontSize=13;spacing=8;" value="Docker Compose&#xa;Integra PostGIS, Mage, FastAPI y Streamlit" vertex="1">
+          <mxGeometry height="88" width="260" x="-360" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-17" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#2563eb;strokeWidth=2;endArrow=block;endFill=1;" target="ewUvNGYYSKB0qQvGYQx4-8">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7c3aed;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="transform" target="finaldb">
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-18" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#9333ea;strokeWidth=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ewUvNGYYSKB0qQvGYQx4-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="315" y="902" as="sourcePoint" />
+            <mxPoint x="315" y="900" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-19" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#d97706;strokeWidth=2;endArrow=block;endFill=1;" target="ewUvNGYYSKB0qQvGYQx4-10">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16a34a;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="finaldb" target="api">
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-20" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#7c3aed;strokeWidth=2;endArrow=block;endFill=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="ewUvNGYYSKB0qQvGYQx4-11">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="315" y="1290" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-21" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#16a34a;strokeWidth=2;endArrow=block;endFill=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="ewUvNGYYSKB0qQvGYQx4-12">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="315" y="1430" />
+              <mxPoint x="160" y="1430" />
+            </Array>
+            <mxPoint x="315.06666666666706" y="1400" as="sourcePoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-24" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366f1;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" target="ewUvNGYYSKB0qQvGYQx4-8">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#059669;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="api" target="dashboard">
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-25" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366f1;strokeWidth=2;dashed=1;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="ewUvNGYYSKB0qQvGYQx4-10">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="70" y="826" />
+              <mxPoint x="70" y="1185" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-26" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" target="ewUvNGYYSKB0qQvGYQx4-15">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="edge7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#4b5563;strokeWidth=2;endArrow=block;endFill=1;" edge="1" parent="1" source="dashboard" target="user">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-27" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="ewUvNGYYSKB0qQvGYQx4-9">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint y="1014.0666666666666" as="sourcePoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="edge8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366f1;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" edge="1" parent="1" source="mage" target="extract">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-28" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="ewUvNGYYSKB0qQvGYQx4-12">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="20" y="981" />
+              <mxPoint x="20" y="1400" />
+              <mxPoint x="130" y="1400" />
+            </Array>
+            <mxPoint x="-40" y="1100" as="sourcePoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="edge9" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6366f1;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" edge="1" parent="1" source="mage" target="transform">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-29" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="ewUvNGYYSKB0qQvGYQx4-13">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="20" y="981" />
+              <mxPoint x="20" y="1400" />
+              <mxPoint x="460" y="1400" />
+            </Array>
+            <mxPoint x="80" y="960" as="sourcePoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="edge10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" edge="1" parent="1" source="docker" target="mage">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="wyljjxAgtxabtr4AYc_m-2" edge="1" parent="1" source="ewUvNGYYSKB0qQvGYQx4-16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;exitX=1;exitY=0.5;exitDx=0;exitDy=0;" target="ewUvNGYYSKB0qQvGYQx4-11" value="">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="20" y="981" />
+              <mxPoint x="20" y="1346" />
+            </Array>
+            <mxPoint y="1014.0666666666666" as="sourcePoint" />
+            <mxPoint x="420" y="1300" as="targetPoint" />
+          </mxGeometry>
         </mxCell>
-        <mxCell id="edge11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" edge="1" parent="1" source="docker" target="rawdb">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="ewUvNGYYSKB0qQvGYQx4-11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ede9fe;strokeColor=#7c3aed;fontColor=#4c1d95;fontSize=13;spacing=8;" value="PostgreSQL + PostGIS&#xa;Tabla earthquakes + indices GIST&#xa;Lista para consultas espaciales" vertex="1">
+          <mxGeometry height="72" width="280" x="175" y="1310" as="geometry" />
         </mxCell>
-        <mxCell id="edge12" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" edge="1" parent="1" source="docker" target="api">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        <mxCell id="edge13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;strokeColor=#6b7280;strokeWidth=2;dashed=1;endArrow=block;endFill=1;" edge="1" parent="1" source="docker" target="dashboard">
-          <mxGeometry relative="1" as="geometry" />
-        </mxCell>
-        </root>
+      </root>
     </mxGraphModel>
   </diagram>
 </mxfile>
