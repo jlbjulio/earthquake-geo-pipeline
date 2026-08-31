@@ -1,96 +1,102 @@
-# Proyecto Semestral - Arquitectura y Exposicion de Datos Geoespaciales
+# Earthquake Geospatial Data Pipeline
 
-**Integrantes:**
-- Julio Lara - 8-997-2325
-- Joseph Batista - 8-1009-1500
+An end-to-end data platform for collecting, processing, storing, exposing, and visualizing global earthquake data from the United States Geological Survey (USGS).
 
-Pipeline end-to-end de datos geoespaciales con orquestacion en Mage AI, almacenamiento PostGIS, backend FastAPI y dashboard Streamlit.
+The system combines automated orchestration, spatial data processing, a REST API, and an interactive dashboard in a fully containerized environment.
 
-## Stack
+## Overview
 
-| Componente      | Tecnologia                  |
-| --------------- | --------------------------- |
-| Orquestacion    | Mage AI                     |
-| Base de Datos   | PostgreSQL 16 + PostGIS 3.4 |
-| Procesamiento   | Python, Pandas, GeoPandas   |
-| Backend / API   | FastAPI, Uvicorn, SQLAlchemy |
-| Visualizacion   | Streamlit, Folium           |
-| Infraestructura | Docker, Docker Compose      |
+Earthquake events are retrieved from the USGS GeoJSON feed and loaded into PostgreSQL. GeoPandas transforms the raw records into spatial features, which are stored in PostGIS and optimized for geospatial queries. FastAPI exposes the processed data through REST endpoints, while Streamlit and Folium provide an interactive analytical dashboard.
 
-## Arquitectura
+Mage AI orchestrates the pipeline automatically every 12 hours.
+
+## Key Features
+
+- Automated ingestion from the USGS Earthquake API.
+- Batch inserts for efficient raw-data loading.
+- Incremental processing of new and updated events.
+- Native geospatial storage with PostgreSQL and PostGIS.
+- GIST indexes for optimized spatial queries.
+- Radius-based earthquake searches using `ST_DWithin`.
+- Spatial clustering with DBSCAN.
+- REST API with interactive Swagger documentation.
+- Interactive maps, analytical summaries, and event highlights.
+- Fully containerized setup with Docker Compose.
+- Scheduled pipeline execution with Mage AI.
+
+## Technology Stack
+
+| Component | Technology |
+| --- | --- |
+| Orchestration | Mage AI |
+| Database | PostgreSQL 16 and PostGIS 3.4 |
+| Data Processing | Python, Pandas, and GeoPandas |
+| Backend API | FastAPI, Uvicorn, and SQLAlchemy |
+| Visualization | Streamlit and Folium |
+| Infrastructure | Docker and Docker Compose |
+
+## Architecture
 
 ```text
 USGS Earthquake API
         |
         v
-  [Extract & Load]  scripts/extract_load.py
+  Extract and Load
+  scripts/extract_load.py
         |
         | raw_earthquakes
         v
   PostgreSQL + PostGIS
         |
-        | lectura SQL
+        | SQL read
         v
-  [Transform]  scripts/transform_load.py  (GeoPandas)
+  Transform
+  scripts/transform_load.py (GeoPandas)
         |
-        | geometrias Point
+        | Point geometries
         v
-  PostgreSQL + PostGIS  (tabla final con indices GIST)
+  PostgreSQL + PostGIS
+  Final table with GIST indexes
         |
-        | consultas espaciales SQL
+        | Spatial SQL queries
         v
-  FastAPI + Uvicorn  (endpoints REST + Swagger)
+  FastAPI + Uvicorn
+  REST endpoints and Swagger UI
         |
-        | HTTP JSON
+        | HTTP / JSON
         v
-  Streamlit + Folium  (dashboard con mapa interactivo)
+  Streamlit + Folium
+  Interactive analytics dashboard
         |
         v
-  Usuario
+      User
         ^
         |
-  Mage AI  (orquesta pipeline cada 12h)
+  Mage AI orchestrates the pipeline every 12 hours
 ```
 
-## Mejoras de rendimiento y presentacion
-
-- La carga cruda usa inserciones por lote en vez de insertar evento por evento.
-- La transformacion ahora es incremental: solo procesa eventos nuevos o eventos cuyo `updated` cambio en USGS.
-- Se agregaron indices para filtros frecuentes: tiempo, magnitud y actualizacion.
-- El dashboard limita la cantidad dibujada en mapa/tabla para mantener respuesta fluida sin borrar datos de la base.
-- El resumen visual se reorganizo con tarjetas analiticas, graficas claras y eventos destacados.
-- La paleta visual se normalizo: fondos claros para texto chocolate y barra lateral chocolate con texto claro.
-
-## Servicios
-
-| Servicio   | Puerto | URL                        |
-| ---------- | ------ | -------------------------- |
-| PostGIS    | 5433   | localhost:5433             |
-| Mage AI    | 6789   | http://localhost:6789      |
-| FastAPI    | 8001   | http://localhost:8001      |
-| Swagger UI | 8001   | http://localhost:8001/docs |
-| Streamlit  | 8501   | http://localhost:8501      |
-
-El backend se publica en `8001` para evitar conflictos con otros proyectos FastAPI que suelen usar `8000`. Dentro de Docker, los servicios siguen comunicandose con el backend por `http://backend:8000`.
-
-## Estructura del Proyecto
+## Repository Structure
 
 ```text
 .
 +-- docker-compose.yml
-+-- postgres/init/01_init.sql
++-- postgres/
+|   +-- init/
+|       +-- 01_init.sql
 +-- scripts/
 |   +-- extract_load.py
 |   +-- transform_load.py
 +-- mage_project/
-|   +-- pipelines/earthquake_pipeline/
-|   |   +-- blocks/
-|   |   +-- triggers.yaml
+|   +-- pipelines/
+|       +-- earthquake_pipeline/
+|           +-- blocks/
+|           +-- triggers.yaml
 +-- backend/
 |   +-- app/
 |       +-- main.py
 |       +-- models.py
-|       +-- routers/earthquakes.py
+|       +-- routers/
+|           +-- earthquakes.py
 +-- dashboard/
 |   +-- app.py
 +-- docs/
@@ -100,110 +106,81 @@ El backend se publica en `8001` para evitar conflictos con otros proyectos FastA
 +-- presentacion_final.md
 ```
 
-## Endpoints de la API
+## Getting Started
 
-| Metodo | Endpoint                        | Descripcion                            |
-| ------ | ------------------------------- | -------------------------------------- |
-| GET    | `/api/v1/health`                | Healthcheck del backend                |
-| GET    | `/api/v1/earthquakes`           | Lista con filtros de magnitud y tiempo |
-| GET    | `/api/v1/earthquakes/radius`    | Busqueda radial con `ST_DWithin`       |
-| GET    | `/api/v1/earthquakes/stats`     | Estadisticas via funcion SQL           |
-| GET    | `/api/v1/earthquakes/analysis`  | Analisis agregado para el dashboard    |
-| GET    | `/api/v1/earthquakes/clusters`  | Clusters espaciales con DBSCAN         |
-| GET    | `/api/v1/earthquakes/{usgs_id}` | Detalle por ID de USGS                 |
+### Prerequisites
 
-## Uso
+- Git
+- Docker Desktop on Windows or macOS, or Docker Engine with Compose on Linux
+- At least 4 GB of memory available to Docker
 
-Requisitos:
+On ARM64 systems such as Apple Silicon, Docker Desktop runs the PostGIS image through AMD64 emulation. The initial build may therefore take longer. Linux ARM64 environments require Docker's `binfmt/qemu` emulation to be enabled.
 
-- Git.
-- Docker Desktop en Windows/macOS, o Docker Engine con Compose en Linux.
-- Al menos 4 GB de memoria disponibles para Docker.
+### Installation
 
-El proyecto funciona en Windows, macOS y Linux con Docker. En equipos ARM64,
-como Apple Silicon, Docker Desktop ejecuta PostGIS mediante emulacion AMD64;
-por eso la primera construccion puede tardar un poco mas. En Linux ARM64 se
-requiere tener habilitada la emulacion `binfmt/qemu` de Docker.
-
-Clonar el repositorio y entrar en su carpeta:
+Clone the repository using its GitHub URL and enter the directory:
 
 ```bash
-git clone https://github.com/jlbjulio/earthquake-geo-pipeline.git
+git clone <repository-url>
 cd earthquake-geo-pipeline
 ```
 
-El repositorio incluye un archivo `.env` con la configuracion local compartida.
-Para usar otros puertos o credenciales, editar ese archivo antes de iniciar.
+The repository includes a local `.env` configuration. Update it before starting the services if different ports or credentials are required.
 
-Construir e iniciar todos los servicios:
+Build and start the complete stack:
 
 ```bash
 docker compose up -d --build
 ```
 
-Comprobar que todos llegaron a estado `healthy`:
+Confirm that every service has reached the `healthy` state:
 
 ```bash
 docker compose ps
 ```
 
-Luego abrir:
+## Services
 
-- Dashboard: http://localhost:8501
-- API Docs: http://localhost:8001/docs
-- Mage AI: http://localhost:6789
+| Service | Port | URL |
+| --- | ---: | --- |
+| PostGIS | 5433 | `localhost:5433` |
+| Mage AI | 6789 | http://localhost:6789 |
+| FastAPI | 8001 | http://localhost:8001 |
+| Swagger UI | 8001 | http://localhost:8001/docs |
+| Streamlit | 8501 | http://localhost:8501 |
 
-Para ejecutar el pipeline manualmente desde consola:
+The backend is exposed on port `8001` to avoid conflicts with applications commonly using port `8000`. Inside the Docker network, services communicate with the backend through `http://backend:8000`.
+
+## API Reference
+
+| Method | Endpoint | Description |
+| --- | --- | --- |
+| `GET` | `/api/v1/health` | Check the backend health status |
+| `GET` | `/api/v1/earthquakes` | List events with magnitude and time filters |
+| `GET` | `/api/v1/earthquakes/radius` | Search for events within a geographic radius |
+| `GET` | `/api/v1/earthquakes/stats` | Retrieve aggregated statistics from SQL |
+| `GET` | `/api/v1/earthquakes/analysis` | Retrieve aggregated dashboard analytics |
+| `GET` | `/api/v1/earthquakes/clusters` | Retrieve DBSCAN spatial clusters |
+| `GET` | `/api/v1/earthquakes/{usgs_id}` | Retrieve an event by its USGS identifier |
+
+Interactive API documentation is available at http://localhost:8001/docs after the services start.
+
+## Running the Pipeline
+
+Run the extraction and transformation stages manually:
 
 ```bash
 docker compose exec -w /home/src/earthquake_geo_pipeline mage python scripts/extract_load.py
 docker compose exec -w /home/src/earthquake_geo_pipeline mage python scripts/transform_load.py
 ```
 
-Tambien se puede ejecutar desde la UI de Mage AI abriendo el pipeline `earthquake_pipeline`. El trigger incluido queda configurado para correr cada 12 horas.
+The pipeline can also be started from the Mage AI interface by opening `earthquake_pipeline`.
 
-En una instalacion nueva, Mage registra el trigger desde
-`mage_project/pipelines/earthquake_pipeline/triggers.yaml` y crea una primera
-ejecucion automaticamente. De esta forma el dashboard recibe datos sin esperar
-al siguiente intervalo de 12 horas. El historial posterior es local a cada PC.
+The included trigger runs every 12 hours. On a new installation, Mage registers the trigger from `mage_project/pipelines/earthquake_pipeline/triggers.yaml` and automatically creates the first execution, allowing the dashboard to receive data without waiting for the next scheduled interval.
 
-### Actualizar una copia existente
+## Configuration
 
-```bash
-git pull
-docker compose up -d --build
-```
-
-Los volúmenes de PostgreSQL y Mage se conservan durante esta actualización.
-
-### Diagnóstico rápido
-
-```bash
-docker compose ps
-docker compose logs --tail=100 mage
-docker compose logs --tail=100 backend
-docker compose logs --tail=100 dashboard
-```
-
-Si el trigger no aparece después de actualizar el repositorio:
-
-```bash
-docker compose restart mage
-```
-
-No ejecutar `docker compose down -v` salvo que se quiera borrar completamente
-la base espacial, los usuarios y el historial local de Mage. Para reiniciar una
-instalación vacía de forma intencional:
-
-```bash
-docker compose down -v
-docker compose up -d --build
-```
-
-## Variables de entorno principales
-
-Editar `.env` si hace falta personalizar puertos o credenciales. El archivo
-`.env.example` se conserva como referencia de los valores disponibles.
+The main configuration values are defined in `.env`. The `.env.example` file documents the available options.
 
 ```env
 POSTGIS_PORT=5433
@@ -214,6 +191,44 @@ API_PUBLIC_URL=http://localhost:8001
 USGS_FEED_URL=https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_month.geojson
 ```
 
-## Datos
+## Updating
 
-Fuente: [USGS Earthquake Catalog](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php). Es una API publica en formato GeoJSON, actualizada continuamente y sin autenticacion.
+Pull the latest changes and rebuild the services:
+
+```bash
+git pull
+docker compose up -d --build
+```
+
+Existing PostgreSQL and Mage volumes are preserved during this process.
+
+## Troubleshooting
+
+Check the service status and recent logs:
+
+```bash
+docker compose ps
+docker compose logs --tail=100 mage
+docker compose logs --tail=100 backend
+docker compose logs --tail=100 dashboard
+```
+
+If the scheduled trigger does not appear after an update, restart Mage:
+
+```bash
+docker compose restart mage
+```
+
+> [!WARNING]
+> Running `docker compose down -v` permanently removes the spatial database, users, and local Mage history.
+
+To intentionally create a clean installation:
+
+```bash
+docker compose down -v
+docker compose up -d --build
+```
+
+## Data Source
+
+Earthquake data is provided by the [USGS Earthquake Catalog](https://earthquake.usgs.gov/earthquakes/feed/v1.0/geojson.php), a continuously updated public GeoJSON API that does not require authentication.
